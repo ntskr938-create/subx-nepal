@@ -1,0 +1,6 @@
+{
+  "name": "SubX Nepal",
+  "description": "Premium Digital Subscriptions Marketplace in Nepal offering Google Gemini AI, YouTube Premium, CapCut, Netflix, eSewa & Khalti checkout, and WhatsApp order delivery.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
