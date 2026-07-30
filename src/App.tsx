@@ -32,18 +32,24 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>(() => getSavedProducts(INITIAL_PRODUCTS));
   const [orders, setOrders] = useState<Order[]>(() => getSavedOrders(INITIAL_ORDERS));
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => getSavedSiteSettings());
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Fetch full store data from server DB on mount
   useEffect(() => {
+    let isMounted = true;
     async function loadServerData() {
       const serverData = await fetchStoreDataFromServer();
-      if (serverData) {
-        if (serverData.products) setProducts(serverData.products);
-        if (serverData.siteSettings) setSiteSettings(serverData.siteSettings);
-        if (serverData.orders) setOrders(serverData.orders);
+      if (isMounted) {
+        if (serverData) {
+          if (serverData.products && serverData.products.length > 0) setProducts(serverData.products);
+          if (serverData.siteSettings) setSiteSettings(serverData.siteSettings);
+          if (serverData.orders) setOrders(serverData.orders);
+        }
+        setIsLoaded(true);
       }
     }
     loadServerData();
+    return () => { isMounted = false; };
   }, []);
 
   // Modals & Search state
@@ -82,18 +88,21 @@ export default function App() {
     };
   }, []);
 
-  // Save to LocalStorage and Server Database whenever state changes
+  // Save to LocalStorage and Server Database whenever state changes (only AFTER server data is loaded)
   useEffect(() => {
+    if (!isLoaded) return;
     syncProductsToServer(products);
-  }, [products]);
+  }, [products, isLoaded]);
 
   useEffect(() => {
+    if (!isLoaded) return;
     syncOrdersToServer(orders);
-  }, [orders]);
+  }, [orders, isLoaded]);
 
   useEffect(() => {
+    if (!isLoaded) return;
     syncSiteSettingsToServer(siteSettings);
-  }, [siteSettings]);
+  }, [siteSettings, isLoaded]);
 
   // Modal Triggers
   const handleOpenCheckout = (productId?: string, planId?: string) => {

@@ -59,6 +59,47 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+  // Static serving for uploaded image files
+  const UPLOADS_DIR = path.join(process.cwd(), "data", "uploads");
+  if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  }
+  app.use("/uploads", express.static(UPLOADS_DIR));
+
+  // Upload endpoint to save base64 images as real files
+  app.post("/api/upload", (req, res) => {
+    try {
+      const { image } = req.body;
+      if (!image || typeof image !== "string") {
+        return res.status(400).json({ error: "No image data provided" });
+      }
+
+      // If it's already a URL or path, return it as is
+      if (image.startsWith("http://") || image.startsWith("https://") || image.startsWith("/uploads/")) {
+        return res.json({ success: true, url: image });
+      }
+
+      const matches = image.match(/^data:image\/([a-zA-Z0-9+\-+.]+);base64,(.+)$/);
+      if (!matches) {
+        return res.status(400).json({ error: "Invalid image base64 format" });
+      }
+
+      const rawExt = matches[1].toLowerCase();
+      const ext = rawExt.includes("svg") ? "svg" : rawExt.includes("png") ? "png" : rawExt.includes("webp") ? "webp" : "jpg";
+      const base64Data = matches[2];
+      const fileName = `logo_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+      const filePath = path.join(UPLOADS_DIR, fileName);
+
+      fs.writeFileSync(filePath, Buffer.from(base64Data, "base64"));
+      const publicUrl = `/uploads/${fileName}`;
+
+      res.json({ success: true, url: publicUrl });
+    } catch (err) {
+      console.error("Failed to save image upload", err);
+      res.status(500).json({ error: "Failed to process image upload" });
+    }
+  });
+
   // API Routes
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok" });

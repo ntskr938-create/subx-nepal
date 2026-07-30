@@ -83,14 +83,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [uploadError, setUploadError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const uploadImageToServer = async (base64Str: string): Promise<string> => {
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64Str })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.url) return data.url;
+      }
+    } catch (err) {
+      console.warn('Image upload to server failed, using base64 fallback', err);
+    }
+    return base64Str;
+  };
+
   const handleSiteLogoUpload = (file: File) => {
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       if (reader.result) {
+        const base64Str = reader.result as string;
+        const uploadedUrl = await uploadImageToServer(base64Str);
         setLocalSiteSettings((prev) => ({
           ...prev,
-          logoUrl: reader.result as string
+          logoUrl: uploadedUrl
         }));
       }
     };
@@ -101,10 +120,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setUploadError('');
     if (!file) return;
 
-    // Validate image format: PNG, JPG, JPEG, WEBP
-    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    // Validate image format: PNG, JPG, JPEG, WEBP, SVG
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/svg+xml'];
     if (!validTypes.includes(file.type.toLowerCase())) {
-      setUploadError('Unsupported file format! Please upload a PNG, JPG, JPEG, or WEBP image.');
+      setUploadError('Unsupported file format! Please upload a PNG, JPG, JPEG, WEBP, or SVG image.');
       return;
     }
 
@@ -115,14 +134,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       return;
     }
 
-    // Convert to Base64
+    // Convert to Base64 and upload to server
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       if (reader.result && editingProductModal) {
-        setEditingProductModal({
-          ...editingProductModal,
-          logoIcon: reader.result as string
-        });
+        const base64Str = reader.result as string;
+        const uploadedUrl = await uploadImageToServer(base64Str);
+        setEditingProductModal((prev) => prev ? {
+          ...prev,
+          logoIcon: uploadedUrl
+        } : null);
       }
     };
     reader.onerror = () => {
