@@ -18,9 +18,19 @@ import {
   Lock,
   RefreshCw,
   Trash2,
-  LogOut
+  LogOut,
+  Image as ImageIcon,
+  Sparkles,
+  Bot,
+  Youtube,
+  Video,
+  Tv,
+  Palette,
+  Music,
+  Cpu,
+  Tag
 } from 'lucide-react';
-import { Order, OrderStatus, Product } from '../types';
+import { Category, Order, OrderStatus, Product } from '../types';
 import { formatNpr, generateCustomerWhatsAppUpdateUrl } from '../utils/helpers';
 
 interface AdminDashboardProps {
@@ -30,6 +40,9 @@ interface AdminDashboardProps {
   onUpdateOrderStatus: (orderId: string, status: OrderStatus, deliveryNotes?: string) => void;
   products: Product[];
   onUpdateProductPrice: (productId: string, planId: string, newPrice: number) => void;
+  onUpdateProduct?: (updatedProduct: Product) => void;
+  onAddProduct?: (newProduct: Product) => void;
+  onDeleteProduct?: (productId: string) => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -38,18 +51,53 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   orders,
   onUpdateOrderStatus,
   products,
-  onUpdateProductPrice
+  onUpdateProductPrice,
+  onUpdateProduct,
+  onAddProduct,
+  onDeleteProduct
 }) => {
   if (!isOpen) return null;
 
   const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'customers'>('orders');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
-  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
-  const [deliveryNoteInput, setDeliveryNoteInput] = useState('');
   
   // Product Edit state
   const [editingPriceMap, setEditingPriceMap] = useState<Record<string, number>>({});
+  const [editingProductModal, setEditingProductModal] = useState<Product | null>(null);
+
+  // Helper render icon
+  const renderLogoPreview = (logoIcon: string) => {
+    if (
+      logoIcon.startsWith('http://') || 
+      logoIcon.startsWith('https://') || 
+      logoIcon.startsWith('data:') || 
+      logoIcon.startsWith('/')
+    ) {
+      return (
+        <img 
+          src={logoIcon} 
+          alt="Logo" 
+          className="w-6 h-6 object-contain rounded" 
+          referrerPolicy="no-referrer"
+          onError={(e) => {
+            (e.target as HTMLElement).style.display = 'none';
+          }} 
+        />
+      );
+    }
+    switch (logoIcon) {
+      case 'Sparkles': return <Sparkles className="w-5 h-5 text-amber-300" />;
+      case 'Youtube': return <Youtube className="w-5 h-5 text-red-400" />;
+      case 'Video': return <Video className="w-5 h-5 text-cyan-300" />;
+      case 'Tv': return <Tv className="w-5 h-5 text-red-500" />;
+      case 'Bot': return <Bot className="w-5 h-5 text-emerald-400" />;
+      case 'Palette': return <Palette className="w-5 h-5 text-purple-300" />;
+      case 'Music': return <Music className="w-5 h-5 text-emerald-300" />;
+      case 'Cpu': return <Cpu className="w-5 h-5 text-amber-400" />;
+      default: return <Sparkles className="w-5 h-5 text-emerald-400" />;
+    }
+  };
 
   // Stats Calculations
   const totalRevenue = orders
@@ -92,6 +140,47 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
+  const handleSaveProductModal = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProductModal) return;
+
+    if (onUpdateProduct) {
+      const exists = products.some(p => p.id === editingProductModal.id);
+      if (exists) {
+        onUpdateProduct(editingProductModal);
+      } else if (onAddProduct) {
+        onAddProduct(editingProductModal);
+      }
+    }
+    setEditingProductModal(null);
+    alert('Product details & logo updated successfully!');
+  };
+
+  const handleAddNewProductClick = () => {
+    const newId = `prod-${Date.now()}`;
+    const newProd: Product = {
+      id: newId,
+      title: 'New Subscription',
+      brand: 'SubX',
+      category: 'AI Tools',
+      description: 'Authentic digital subscription with warranty.',
+      iconBg: 'from-emerald-500/20 to-teal-500/20',
+      brandColor: 'text-emerald-400',
+      logoIcon: 'Bot',
+      plans: [
+        { id: `${newId}-1m`, name: '1 Month', duration: '1 Month', priceNpr: 500, popular: true },
+        { id: `${newId}-1y`, name: '1 Year', duration: '1 Year', priceNpr: 4500 }
+      ],
+      selectedPlanId: `${newId}-1m`,
+      features: ['Private Account Activation', 'Nepal Warranty', 'Instant Delivery'],
+      stockStatus: 'In Stock',
+      deliveryTime: '5-15 Mins',
+      rating: 5.0,
+      reviewsCount: 12
+    };
+    setEditingProductModal(newProd);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-md overflow-y-auto">
       <div className="relative w-full max-w-6xl rounded-2xl bg-[#0e1420] border border-emerald-500/30 text-white shadow-2xl overflow-hidden my-auto flex flex-col max-h-[90vh]">
@@ -109,7 +198,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   LIVE PORTAL
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Manage Orders, Product Pricing in NPR, and Customer Deliveries</p>
+              <p className="text-xs text-slate-400">Manage Orders, Product Pricing, Logos & Catalog</p>
             </div>
           </div>
 
@@ -158,39 +247,51 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         {/* Admin Navigation Tabs */}
-        <div className="px-4 pt-3 bg-slate-900/60 border-b border-white/10 flex items-center gap-2 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('orders')}
-            className={`px-4 py-2 text-xs font-extrabold rounded-t-xl transition-all border-t border-x ${
-              activeTab === 'orders'
-                ? 'bg-[#0e1420] text-emerald-400 border-emerald-500/40'
-                : 'text-slate-400 hover:text-slate-200 border-transparent'
-            }`}
-          >
-            Manage Orders ({orders.length})
-          </button>
+        <div className="px-4 pt-3 bg-slate-900/60 border-b border-white/10 flex items-center justify-between overflow-x-auto">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={`px-4 py-2 text-xs font-extrabold rounded-t-xl transition-all border-t border-x ${
+                activeTab === 'orders'
+                  ? 'bg-[#0e1420] text-emerald-400 border-emerald-500/40'
+                  : 'text-slate-400 hover:text-slate-200 border-transparent'
+              }`}
+            >
+              Manage Orders ({orders.length})
+            </button>
 
-          <button
-            onClick={() => setActiveTab('products')}
-            className={`px-4 py-2 text-xs font-extrabold rounded-t-xl transition-all border-t border-x ${
-              activeTab === 'products'
-                ? 'bg-[#0e1420] text-emerald-400 border-emerald-500/40'
-                : 'text-slate-400 hover:text-slate-200 border-transparent'
-            }`}
-          >
-            Manage Products & Pricing
-          </button>
+            <button
+              onClick={() => setActiveTab('products')}
+              className={`px-4 py-2 text-xs font-extrabold rounded-t-xl transition-all border-t border-x ${
+                activeTab === 'products'
+                  ? 'bg-[#0e1420] text-emerald-400 border-emerald-500/40'
+                  : 'text-slate-400 hover:text-slate-200 border-transparent'
+              }`}
+            >
+              Manage Products, Logos & Pricing
+            </button>
 
-          <button
-            onClick={() => setActiveTab('customers')}
-            className={`px-4 py-2 text-xs font-extrabold rounded-t-xl transition-all border-t border-x ${
-              activeTab === 'customers'
-                ? 'bg-[#0e1420] text-emerald-400 border-emerald-500/40'
-                : 'text-slate-400 hover:text-slate-200 border-transparent'
-            }`}
-          >
-            Subscription Status Tracker
-          </button>
+            <button
+              onClick={() => setActiveTab('customers')}
+              className={`px-4 py-2 text-xs font-extrabold rounded-t-xl transition-all border-t border-x ${
+                activeTab === 'customers'
+                  ? 'bg-[#0e1420] text-emerald-400 border-emerald-500/40'
+                  : 'text-slate-400 hover:text-slate-200 border-transparent'
+              }`}
+            >
+              Subscription Status Tracker
+            </button>
+          </div>
+
+          {activeTab === 'products' && (
+            <button
+              onClick={handleAddNewProductClick}
+              className="mb-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-600/30"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add New Product</span>
+            </button>
+          )}
         </div>
 
         {/* TAB 1: MANAGE ORDERS */}
@@ -313,21 +414,59 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {activeTab === 'products' && (
           <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
             <p className="text-xs text-slate-400">
-              Modify pricing in NPR for all digital subscription products in SubX Nepal catalog:
+              Modify product details, change logo/icon (URL or presets), update NPR prices, or add new subscriptions:
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {products.map((p) => (
-                <div key={p.id} className="p-4 rounded-xl bg-slate-900 border border-white/10 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-extrabold text-sm text-white">{p.title}</h4>
-                      <span className="text-[11px] text-emerald-400">{p.brand} • {p.category}</span>
+                <div key={p.id} className="p-4 rounded-xl bg-slate-900 border border-white/10 space-y-3 relative group">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${p.iconBg} p-2 flex items-center justify-center border border-white/10 shrink-0`}>
+                        {renderLogoPreview(p.logoIcon)}
+                      </div>
+                      <div>
+                        <h4 className="font-extrabold text-sm text-white flex items-center gap-1.5">
+                          <span>{p.title}</span>
+                          {p.badge && (
+                            <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded font-bold">
+                              {p.badge}
+                            </span>
+                          )}
+                        </h4>
+                        <span className="text-[11px] text-emerald-400 block">{p.brand} • {p.category}</span>
+                      </div>
                     </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      {p.stockStatus}
-                    </span>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setEditingProductModal(p)}
+                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-600/30 hover:border-emerald-500/40 text-emerald-400 border border-white/10 text-xs font-bold transition-all flex items-center gap-1"
+                        title="Edit Logo & Details"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span className="text-[11px]">Edit Logo & Details</span>
+                      </button>
+
+                      {onDeleteProduct && (
+                        <button
+                          onClick={() => {
+                            if (confirm(`Are you sure you want to delete "${p.title}"?`)) {
+                              onDeleteProduct(p.id);
+                            }
+                          }}
+                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-600/30 text-slate-400 hover:text-rose-400 border border-white/10 transition-colors"
+                          title="Delete Product"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
+
+                  <p className="text-xs text-slate-300 line-clamp-2 bg-slate-950/60 p-2 rounded border border-white/5">
+                    {p.description}
+                  </p>
 
                   <div className="space-y-2 pt-2 border-t border-white/10">
                     <label className="text-[11px] font-bold text-slate-400 block">Plans & NPR Pricing:</label>
@@ -344,7 +483,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               type="number"
                               value={currentVal}
                               onChange={(e) => handlePriceChange(p.id, plan.id, e.target.value)}
-                              className="w-24 bg-slate-950 border border-white/20 rounded px-2 py-1 text-xs text-emerald-400 font-bold focus:border-emerald-500"
+                              className="w-24 bg-slate-950 border border-white/20 rounded px-2 py-1 text-xs text-emerald-400 font-bold focus:border-emerald-500 font-mono"
                             />
                             <button
                               onClick={() => handleSavePrice(p.id, plan.id)}
@@ -400,6 +539,180 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
 
       </div>
+
+      {/* PRODUCT LOGO & DETAILS EDIT MODAL */}
+      {editingProductModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl overflow-y-auto">
+          <div className="relative w-full max-w-xl rounded-2xl bg-[#0f1522] border border-emerald-500/30 text-white shadow-2xl p-6 space-y-5 my-auto max-h-[90vh] overflow-y-auto">
+            
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-white">
+                    Edit Product & Logo Details
+                  </h3>
+                  <p className="text-xs text-slate-400">Change name, brand, category, logo image URL or icon presets</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setEditingProductModal(null)}
+                className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveProductModal} className="space-y-4 text-xs">
+              
+              {/* Title & Brand */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-300 font-bold block mb-1">Product Title:</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingProductModal.title}
+                    onChange={(e) => setEditingProductModal({ ...editingProductModal, title: e.target.value })}
+                    className="w-full bg-slate-950 border border-white/15 rounded-lg p-2.5 text-white focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-slate-300 font-bold block mb-1">Brand Name:</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingProductModal.brand}
+                    onChange={(e) => setEditingProductModal({ ...editingProductModal, brand: e.target.value })}
+                    className="w-full bg-slate-950 border border-white/15 rounded-lg p-2.5 text-white focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* Category & Badge */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-300 font-bold block mb-1">Category:</label>
+                  <select
+                    value={editingProductModal.category}
+                    onChange={(e) => setEditingProductModal({ ...editingProductModal, category: e.target.value as Category })}
+                    className="w-full bg-slate-950 border border-white/15 rounded-lg p-2.5 text-white focus:border-emerald-500 font-bold"
+                  >
+                    <option value="AI Tools">AI Tools</option>
+                    <option value="Streaming">Streaming</option>
+                    <option value="Design & Video">Design & Video</option>
+                    <option value="Productivity">Productivity</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-slate-300 font-bold block mb-1">Badge Tag (Optional):</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. BEST SELLER, HOT DEAL"
+                    value={editingProductModal.badge || ''}
+                    onChange={(e) => setEditingProductModal({ ...editingProductModal, badge: e.target.value })}
+                    className="w-full bg-slate-950 border border-white/15 rounded-lg p-2.5 text-white focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* Logo / Image URL Customization */}
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-emerald-500/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-emerald-400 font-bold flex items-center gap-1.5">
+                    <ImageIcon className="w-4 h-4" />
+                    <span>Product Logo (Image URL or Icon Preset)</span>
+                  </label>
+                  <div className="w-8 h-8 rounded-lg bg-slate-900 border border-white/20 flex items-center justify-center">
+                    {renderLogoPreview(editingProductModal.logoIcon)}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-slate-400 text-[11px] block mb-1">
+                    Enter Image URL (http://...) or preset icon name:
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="https://example.com/logo.png or Bot, Youtube, Tv, Palette..."
+                    value={editingProductModal.logoIcon}
+                    onChange={(e) => setEditingProductModal({ ...editingProductModal, logoIcon: e.target.value })}
+                    className="w-full bg-slate-900 border border-white/15 rounded-lg p-2.5 text-white font-mono text-xs focus:border-emerald-500"
+                  />
+                </div>
+
+                {/* Preset Icon Selector Buttons */}
+                <div>
+                  <span className="text-slate-400 text-[10px] block mb-1.5">Quick Preset Icons:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { name: 'Bot', label: '🤖 ChatGPT/Bot' },
+                      { name: 'Tv', label: '📺 Netflix/Tv' },
+                      { name: 'Palette', label: '🎨 Canva/Palette' },
+                      { name: 'Youtube', label: '▶️ Youtube' },
+                      { name: 'Music', label: '🎵 Spotify/Music' },
+                      { name: 'Video', label: '🎥 Prime/Video' },
+                      { name: 'Sparkles', label: '✨ Sparkles' },
+                      { name: 'Cpu', label: '⚡ Cpu' }
+                    ].map((ic) => (
+                      <button
+                        type="button"
+                        key={ic.name}
+                        onClick={() => setEditingProductModal({ ...editingProductModal, logoIcon: ic.name })}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold border transition-all ${
+                          editingProductModal.logoIcon === ic.name
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500'
+                            : 'bg-slate-900 text-slate-400 border-white/10 hover:text-white'
+                        }`}
+                      >
+                        {ic.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="text-slate-300 font-bold block mb-1">Description:</label>
+                <textarea
+                  rows={2}
+                  value={editingProductModal.description}
+                  onChange={(e) => setEditingProductModal({ ...editingProductModal, description: e.target.value })}
+                  className="w-full bg-slate-950 border border-white/15 rounded-lg p-2.5 text-white focus:border-emerald-500"
+                />
+              </div>
+
+              {/* Submit / Cancel Buttons */}
+              <div className="pt-3 border-t border-white/10 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingProductModal(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold hover:bg-slate-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black flex items-center gap-1.5 shadow-lg shadow-emerald-500/30"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Changes</span>
+                </button>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

@@ -112,6 +112,20 @@ export default function App() {
     );
   };
 
+  const handleUpdateProduct = (updatedProduct: Product) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p))
+    );
+  };
+
+  const handleAddProduct = (newProduct: Product) => {
+    setProducts((prev) => [newProduct, ...prev]);
+  };
+
+  const handleDeleteProduct = (productId: string) => {
+    setProducts((prev) => prev.filter((p) => p.id !== productId));
+  };
+
   const handleBuyNowFromHero = () => {
     const el = document.getElementById('products');
     if (el) {
@@ -202,6 +216,9 @@ export default function App() {
             onUpdateOrderStatus={handleUpdateOrderStatus}
             products={products}
             onUpdateProductPrice={handleUpdateProductPrice}
+            onUpdateProduct={handleUpdateProduct}
+            onAddProduct={handleAddProduct}
+            onDeleteProduct={handleDeleteProduct}
           />
         ) : (
           <AdminLoginModal

@@ -43,8 +43,23 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
     }));
   };
 
-  // Icon mapping
+  // Icon mapping (supports image URLs and preset Lucide icons)
   const renderIcon = (logoIcon: string) => {
+    if (
+      logoIcon.startsWith('http://') || 
+      logoIcon.startsWith('https://') || 
+      logoIcon.startsWith('data:') || 
+      logoIcon.startsWith('/')
+    ) {
+      return (
+        <img 
+          src={logoIcon} 
+          alt="Product Logo" 
+          className="w-6 h-6 object-contain rounded" 
+          referrerPolicy="no-referrer" 
+        />
+      );
+    }
     switch (logoIcon) {
       case 'Sparkles': return <Sparkles className="w-5 h-5 text-amber-300" />;
       case 'Youtube': return <Youtube className="w-5 h-5 text-red-400" />;
