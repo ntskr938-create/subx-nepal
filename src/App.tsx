@@ -12,23 +12,39 @@ import { OrderTrackerModal } from './components/OrderTrackerModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AdminLoginModal } from './components/AdminLoginModal';
 
-import { Order, OrderStatus, Product } from './types';
 import { INITIAL_PRODUCTS, INITIAL_ORDERS } from './data/initialData';
 import { 
+  fetchStoreDataFromServer,
   getSavedOrders, 
   getSavedProducts, 
   getSavedSiteSettings, 
   saveOrders, 
   saveProducts, 
-  saveSiteSettings 
+  saveSiteSettings,
+  syncOrdersToServer,
+  syncProductsToServer,
+  syncSiteSettingsToServer
 } from './utils/helpers';
 import { Order, OrderStatus, Product, SiteSettings } from './types';
 
 export default function App() {
-  // Load persisted state or initial data
+  // Load initial state (from localStorage cache first, then sync from server)
   const [products, setProducts] = useState<Product[]>(() => getSavedProducts(INITIAL_PRODUCTS));
   const [orders, setOrders] = useState<Order[]>(() => getSavedOrders(INITIAL_ORDERS));
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => getSavedSiteSettings());
+
+  // Fetch full store data from server DB on mount
+  useEffect(() => {
+    async function loadServerData() {
+      const serverData = await fetchStoreDataFromServer();
+      if (serverData) {
+        if (serverData.products) setProducts(serverData.products);
+        if (serverData.siteSettings) setSiteSettings(serverData.siteSettings);
+        if (serverData.orders) setOrders(serverData.orders);
+      }
+    }
+    loadServerData();
+  }, []);
 
   // Modals & Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,17 +82,17 @@ export default function App() {
     };
   }, []);
 
-  // Save to LocalStorage whenever state changes
+  // Save to LocalStorage and Server Database whenever state changes
   useEffect(() => {
-    saveProducts(products);
+    syncProductsToServer(products);
   }, [products]);
 
   useEffect(() => {
-    saveOrders(orders);
+    syncOrdersToServer(orders);
   }, [orders]);
 
   useEffect(() => {
-    saveSiteSettings(siteSettings);
+    syncSiteSettingsToServer(siteSettings);
   }, [siteSettings]);
 
   // Modal Triggers
@@ -153,7 +169,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0f17] text-white font-sans antialiased selection:bg-emerald-500 selection:text-slate-950 pb-16 sm:pb-0">
+    <div className="min-h-screen bg-[#0b0f17] text-white font-sans antialiased selection:bg-emerald-500 selection:text-slate-950">
       
       {/* Top Header */}
       <Header
@@ -193,11 +209,6 @@ export default function App() {
 
       {/* Floating WhatsApp Widget */}
       <FloatingWhatsApp />
-
-      {/* Mobile Sticky Navigation */}
-      <MobileBottomNav
-        onOpenOrderTracker={() => setIsOrderTrackerOpen(true)}
-      />
 
       {/* Customer Modals */}
       <CheckoutModal

@@ -115,32 +115,33 @@ export const Header: React.FC<HeaderProps> = ({
         </nav>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2">
+          {/* Track Order button visible on all screen sizes next to menu button */}
           <button
             onClick={onOpenOrderTracker}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-white/10 text-xs font-semibold text-slate-200 hover:text-white transition-all shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 hover:from-slate-800 hover:to-slate-700 border border-cyan-500/30 text-xs font-bold text-cyan-300 hover:text-cyan-200 transition-all shadow-lg shadow-cyan-950/40 active:scale-95"
           >
-            <SearchCheck className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Track Order</span>
+            <SearchCheck className="w-4 h-4 text-cyan-400" />
+            <span className="font-sans tracking-wide">Track Order</span>
           </button>
 
           <a
             href={generateGeneralWhatsAppUrl()}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-xs font-bold text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-[1.02]"
+            className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-xs font-bold text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-[1.02]"
           >
             <MessageCircle className="w-4 h-4 fill-white text-emerald-600" />
-            <span className="hidden sm:inline">WhatsApp Order</span>
-            <span className="sm:hidden">WhatsApp</span>
+            <span>WhatsApp Support</span>
           </a>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Button (--- / X) */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-lg bg-slate-800/80 border border-white/10 text-slate-300 hover:text-white focus:outline-none"
+            className="lg:hidden p-2 rounded-xl bg-slate-800/90 border border-white/10 text-slate-300 hover:text-white focus:outline-none active:scale-95 transition-all"
+            aria-label="Toggle Navigation Menu"
           >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {mobileMenuOpen ? <X className="w-5 h-5 text-emerald-400" /> : <Menu className="w-5 h-5 text-slate-200" />}
           </button>
         </div>
       </div>

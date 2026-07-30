@@ -51,6 +51,70 @@ Thank you for choosing SubX Nepal! If you need any assistance, feel free to repl
   return `https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`;
 }
 
+// Server API Sync Helpers
+export async function fetchStoreDataFromServer(): Promise<{ products: Product[]; siteSettings: SiteSettings; orders: Order[] } | null> {
+  try {
+    const res = await fetch('/api/store');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.products && data.siteSettings && data.orders) {
+        saveProducts(data.products);
+        saveSiteSettings(data.siteSettings);
+        saveOrders(data.orders);
+        return data;
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to fetch store data from server, falling back to local storage', e);
+  }
+  return null;
+}
+
+export async function syncProductsToServer(products: Product[]): Promise<boolean> {
+  saveProducts(products);
+  try {
+    const res = await fetch('/api/store/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ products })
+    });
+    return res.ok;
+  } catch (e) {
+    console.error('Error syncing products to server', e);
+    return false;
+  }
+}
+
+export async function syncSiteSettingsToServer(settings: SiteSettings): Promise<boolean> {
+  saveSiteSettings(settings);
+  try {
+    const res = await fetch('/api/store/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings)
+    });
+    return res.ok;
+  } catch (e) {
+    console.error('Error syncing site settings to server', e);
+    return false;
+  }
+}
+
+export async function syncOrdersToServer(orders: Order[], newOrder?: Order): Promise<boolean> {
+  saveOrders(orders);
+  try {
+    const res = await fetch('/api/store/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orders, newOrder })
+    });
+    return res.ok;
+  } catch (e) {
+    console.error('Error syncing orders to server', e);
+    return false;
+  }
+}
+
 // LocalStorage Persistence Helpers
 const LOCAL_STORAGE_PRODUCTS_KEY = 'subx_products_v1';
 const LOCAL_STORAGE_ORDERS_KEY = 'subx_orders_v1';
