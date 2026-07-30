@@ -17,7 +17,8 @@ import {
   Calendar,
   Lock,
   RefreshCw,
-  Trash2
+  Trash2,
+  LogOut
 } from 'lucide-react';
 import { Order, OrderStatus, Product } from '../types';
 import { formatNpr, generateCustomerWhatsAppUpdateUrl } from '../utils/helpers';
@@ -112,12 +113,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
 
-          <button 
-            onClick={onClose}
-            className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => {
+                sessionStorage.removeItem('subx_admin_auth');
+                onClose();
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 text-rose-300 text-xs font-bold transition-all"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Logout & Exit</span>
+            </button>
+            <button 
+              onClick={onClose}
+              className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-colors"
+              title="Close Admin Panel"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Stats Row */}

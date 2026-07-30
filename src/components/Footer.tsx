@@ -4,10 +4,9 @@ import { WHATSAPP_NUMBER, generateGeneralWhatsAppUrl } from '../utils/helpers';
 
 interface FooterProps {
   onOpenOrderTracker: () => void;
-  onToggleAdmin: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onOpenOrderTracker, onToggleAdmin }) => {
+export const Footer: React.FC<FooterProps> = ({ onOpenOrderTracker }) => {
   return (
     <footer className="bg-[#070a10] border-t border-white/10 text-slate-400 text-xs py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
@@ -92,13 +91,6 @@ export const Footer: React.FC<FooterProps> = ({ onOpenOrderTracker, onToggleAdmi
             <span className="bg-slate-900 border border-white/10 px-2 py-0.5 rounded text-purple-300 font-bold">Khalti</span>
             <span className="bg-slate-900 border border-white/10 px-2 py-0.5 rounded text-blue-300 font-bold">Bank Transfer</span>
           </div>
-
-          <button
-            onClick={onToggleAdmin}
-            className="text-slate-500 hover:text-amber-400 transition-colors underline"
-          >
-            Admin Portal
-          </button>
         </div>
 
       </div>

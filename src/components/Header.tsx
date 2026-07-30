@@ -17,16 +17,12 @@ import { FULL_WHATSAPP_PHONE, WHATSAPP_NUMBER, generateGeneralWhatsAppUrl } from
 interface HeaderProps {
   onOpenCheckout: (productId?: string) => void;
   onOpenOrderTracker: () => void;
-  onToggleAdmin: () => void;
-  isAdminOpen: boolean;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenOrderTracker,
-  onToggleAdmin,
-  isAdminOpen,
   searchQuery,
   setSearchQuery
 }) => {
@@ -65,17 +61,6 @@ export const Header: React.FC<HeaderProps> = ({
               <MessageCircle className="w-3.5 h-3.5" />
               <span>WhatsApp: +977 {WHATSAPP_NUMBER}</span>
             </a>
-            <button 
-              onClick={onToggleAdmin}
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded border text-[11px] transition-all ${
-                isAdminOpen 
-                  ? 'bg-amber-500/20 border-amber-500 text-amber-300' 
-                  : 'bg-white/5 border-white/10 hover:border-emerald-500/50 text-slate-300 hover:text-white'
-              }`}
-            >
-              <LayoutDashboard className="w-3 h-3 text-emerald-400" />
-              <span>{isAdminOpen ? 'Exit Admin' : 'Admin Portal'}</span>
-            </button>
           </div>
         </div>
       </div>
@@ -216,17 +201,11 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
 
-          <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+          <div className="pt-2 border-t border-white/10 flex items-center justify-center">
             <div className="text-xs text-slate-400 flex items-center gap-1.5">
               <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
               <span>WhatsApp: +977 {WHATSAPP_NUMBER}</span>
             </div>
-            <button 
-              onClick={onToggleAdmin}
-              className="text-xs text-amber-400 underline font-medium"
-            >
-              {isAdminOpen ? 'Exit Admin Mode' : 'Admin Portal'}
-            </button>
           </div>
         </div>
       )}

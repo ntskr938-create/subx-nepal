@@ -10,6 +10,7 @@ import { MobileBottomNav } from './components/MobileBottomNav';
 import { CheckoutModal } from './components/CheckoutModal';
 import { OrderTrackerModal } from './components/OrderTrackerModal';
 import { AdminDashboard } from './components/AdminDashboard';
+import { AdminLoginModal } from './components/AdminLoginModal';
 
 import { Order, OrderStatus, Product } from './types';
 import { INITIAL_PRODUCTS, INITIAL_ORDERS } from './data/initialData';
@@ -32,7 +33,34 @@ export default function App() {
   const [checkoutPlanId, setCheckoutPlanId] = useState<string | undefined>(undefined);
 
   const [isOrderTrackerOpen, setIsOrderTrackerOpen] = useState(false);
-  const [isAdminOpen, setIsAdminOpen] = useState(false);
+
+  // Hidden Admin Route & Authentication state
+  const [isAdminRoute, setIsAdminRoute] = useState<boolean>(() => {
+    const path = window.location.pathname;
+    const hash = window.location.hash;
+    return path === '/admin' || path.endsWith('/admin') || hash === '#admin';
+  });
+
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    return sessionStorage.getItem('subx_admin_auth') === 'true';
+  });
+
+  // Listen to browser URL changes (/admin or #admin)
+  useEffect(() => {
+    const handleUrlChange = () => {
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+      const onAdmin = path === '/admin' || path.endsWith('/admin') || hash === '#admin';
+      setIsAdminRoute(onAdmin);
+    };
+
+    window.addEventListener('popstate', handleUrlChange);
+    window.addEventListener('hashchange', handleUrlChange);
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('hashchange', handleUrlChange);
+    };
+  }, []);
 
   // Save to LocalStorage whenever state changes
   useEffect(() => {
@@ -93,6 +121,15 @@ export default function App() {
     }
   };
 
+  const handleCloseAdmin = () => {
+    setIsAdminRoute(false);
+    if (window.location.hash === '#admin') {
+      window.location.hash = '';
+    } else if (window.location.pathname.endsWith('/admin')) {
+      window.history.pushState({}, '', '/');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0b0f17] text-white font-sans antialiased selection:bg-emerald-500 selection:text-slate-950 pb-16 sm:pb-0">
       
@@ -100,8 +137,6 @@ export default function App() {
       <Header
         onOpenCheckout={handleOpenCheckout}
         onOpenOrderTracker={() => setIsOrderTrackerOpen(true)}
-        onToggleAdmin={() => setIsAdminOpen(!isAdminOpen)}
-        isAdminOpen={isAdminOpen}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
       />
@@ -131,7 +166,6 @@ export default function App() {
       {/* Footer */}
       <Footer
         onOpenOrderTracker={() => setIsOrderTrackerOpen(true)}
-        onToggleAdmin={() => setIsAdminOpen(!isAdminOpen)}
       />
 
       {/* Floating WhatsApp Widget */}
@@ -140,11 +174,9 @@ export default function App() {
       {/* Mobile Sticky Navigation */}
       <MobileBottomNav
         onOpenOrderTracker={() => setIsOrderTrackerOpen(true)}
-        onToggleAdmin={() => setIsAdminOpen(!isAdminOpen)}
-        isAdminOpen={isAdminOpen}
       />
 
-      {/* Modals */}
+      {/* Customer Modals */}
       <CheckoutModal
         isOpen={isCheckoutOpen}
         onClose={() => setIsCheckoutOpen(false)}
@@ -160,14 +192,25 @@ export default function App() {
         orders={orders}
       />
 
-      <AdminDashboard
-        isOpen={isAdminOpen}
-        onClose={() => setIsAdminOpen(false)}
-        orders={orders}
-        onUpdateOrderStatus={handleUpdateOrderStatus}
-        products={products}
-        onUpdateProductPrice={handleUpdateProductPrice}
-      />
+      {/* Admin Route Handling at /admin or #admin */}
+      {isAdminRoute && (
+        isAdminAuthenticated ? (
+          <AdminDashboard
+            isOpen={true}
+            onClose={handleCloseAdmin}
+            orders={orders}
+            onUpdateOrderStatus={handleUpdateOrderStatus}
+            products={products}
+            onUpdateProductPrice={handleUpdateProductPrice}
+          />
+        ) : (
+          <AdminLoginModal
+            isOpen={true}
+            onClose={handleCloseAdmin}
+            onSuccessLogin={() => setIsAdminAuthenticated(true)}
+          />
+        )
+      )}
 
     </div>
   );
