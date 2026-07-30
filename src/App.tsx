@@ -17,14 +17,18 @@ import { INITIAL_PRODUCTS, INITIAL_ORDERS } from './data/initialData';
 import { 
   getSavedOrders, 
   getSavedProducts, 
+  getSavedSiteSettings, 
   saveOrders, 
-  saveProducts 
+  saveProducts, 
+  saveSiteSettings 
 } from './utils/helpers';
+import { Order, OrderStatus, Product, SiteSettings } from './types';
 
 export default function App() {
   // Load persisted state or initial data
   const [products, setProducts] = useState<Product[]>(() => getSavedProducts(INITIAL_PRODUCTS));
   const [orders, setOrders] = useState<Order[]>(() => getSavedOrders(INITIAL_ORDERS));
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => getSavedSiteSettings());
 
   // Modals & Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,6 +74,10 @@ export default function App() {
   useEffect(() => {
     saveOrders(orders);
   }, [orders]);
+
+  useEffect(() => {
+    saveSiteSettings(siteSettings);
+  }, [siteSettings]);
 
   // Modal Triggers
   const handleOpenCheckout = (productId?: string, planId?: string) => {
@@ -153,6 +161,7 @@ export default function App() {
         onOpenOrderTracker={() => setIsOrderTrackerOpen(true)}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        siteSettings={siteSettings}
       />
 
       {/* Main Content Sections */}
@@ -219,6 +228,8 @@ export default function App() {
             onUpdateProduct={handleUpdateProduct}
             onAddProduct={handleAddProduct}
             onDeleteProduct={handleDeleteProduct}
+            siteSettings={siteSettings}
+            onUpdateSiteSettings={setSiteSettings}
           />
         ) : (
           <AdminLoginModal

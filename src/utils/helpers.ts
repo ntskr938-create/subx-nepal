@@ -1,4 +1,12 @@
-import { Order, Product } from '../types';
+import { Order, Product, SiteSettings } from '../types';
+
+export const DEFAULT_SITE_SETTINGS: SiteSettings = {
+  siteName: 'SubX Nepal',
+  tagline: 'PREMIUM DIGITAL STORE',
+  logoUrl: '',
+  whatsappNumber: '9765617156',
+  deliveryTagline: '5-15 Min Instant Delivery'
+};
 
 export const WHATSAPP_NUMBER = '9765617156';
 export const WHATSAPP_COUNTRY_CODE = '977';
@@ -46,6 +54,27 @@ Thank you for choosing SubX Nepal! If you need any assistance, feel free to repl
 // LocalStorage Persistence Helpers
 const LOCAL_STORAGE_PRODUCTS_KEY = 'subx_products_v1';
 const LOCAL_STORAGE_ORDERS_KEY = 'subx_orders_v1';
+const LOCAL_STORAGE_SETTINGS_KEY = 'subx_settings_v1';
+
+export function getSavedSiteSettings(): SiteSettings {
+  try {
+    const saved = localStorage.getItem(LOCAL_STORAGE_SETTINGS_KEY);
+    if (saved) {
+      return { ...DEFAULT_SITE_SETTINGS, ...JSON.parse(saved) };
+    }
+  } catch (e) {
+    console.error('Failed to load site settings from storage', e);
+  }
+  return DEFAULT_SITE_SETTINGS;
+}
+
+export function saveSiteSettings(settings: SiteSettings) {
+  try {
+    localStorage.setItem(LOCAL_STORAGE_SETTINGS_KEY, JSON.stringify(settings));
+  } catch (e) {
+    console.error('Failed to save site settings to storage', e);
+  }
+}
 
 export function getSavedProducts(defaultProducts: Product[]): Product[] {
   try {
@@ -86,3 +115,4 @@ export function saveOrders(orders: Order[]) {
     console.error('Failed to save orders to storage', e);
   }
 }
+

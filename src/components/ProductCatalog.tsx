@@ -52,12 +52,12 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
       logoIcon.startsWith('data:') || 
       logoIcon.startsWith('/')
     ) {
-      if (!logoIcon) return <Sparkles className="w-5 h-5 text-emerald-400" />;
+      if (!logoIcon) return <Sparkles className="w-6 h-6 text-emerald-400" />;
       return (
         <img 
           src={logoIcon} 
           alt="Product Logo" 
-          className="w-full h-full object-contain rounded-lg" 
+          className="w-full h-full object-cover rounded-xl shadow-md transition-transform duration-300 group-hover:scale-105" 
           referrerPolicy="no-referrer" 
           onError={(e) => {
             (e.target as HTMLElement).style.display = 'none';
@@ -67,30 +67,30 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
     }
     const iconKey = logoIcon.toLowerCase();
     if (iconKey.includes('bot') || iconKey.includes('chatgpt')) {
-      return <Bot className="w-5 h-5 text-emerald-400" />;
+      return <Bot className="w-6 h-6 text-emerald-400" />;
     }
     if (iconKey.includes('tv') || iconKey.includes('netflix')) {
-      return <Tv className="w-5 h-5 text-red-500" />;
+      return <Tv className="w-6 h-6 text-red-500" />;
     }
     if (iconKey.includes('palette') || iconKey.includes('canva')) {
-      return <Palette className="w-5 h-5 text-purple-300" />;
+      return <Palette className="w-6 h-6 text-purple-300" />;
     }
     if (iconKey.includes('youtube')) {
-      return <Youtube className="w-5 h-5 text-red-400" />;
+      return <Youtube className="w-6 h-6 text-red-400" />;
     }
     if (iconKey.includes('music') || iconKey.includes('spotify')) {
-      return <Music className="w-5 h-5 text-emerald-300" />;
+      return <Music className="w-6 h-6 text-emerald-300" />;
     }
     if (iconKey.includes('video') || iconKey.includes('prime')) {
-      return <Video className="w-5 h-5 text-cyan-300" />;
+      return <Video className="w-6 h-6 text-cyan-300" />;
     }
     if (iconKey.includes('cpu')) {
-      return <Cpu className="w-5 h-5 text-amber-400" />;
+      return <Cpu className="w-6 h-6 text-amber-400" />;
     }
     if (iconKey.includes('gemini') || iconKey.includes('sparkles')) {
-      return <Sparkles className="w-5 h-5 text-amber-300" />;
+      return <Sparkles className="w-6 h-6 text-amber-300" />;
     }
-    return <Sparkles className="w-5 h-5 text-emerald-400" />;
+    return <Sparkles className="w-6 h-6 text-emerald-400" />;
   };
 
   // Filter products by category & search query

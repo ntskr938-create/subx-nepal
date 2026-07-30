@@ -79,3 +79,11 @@ export interface LiveOrderFeed {
   plan: string;
   timeAgo: string;
 }
+
+export interface SiteSettings {
+  siteName: string;
+  tagline: string;
+  logoUrl: string; // Base64 or image URL
+  whatsappNumber: string;
+  deliveryTagline: string;
+}

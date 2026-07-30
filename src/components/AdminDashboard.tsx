@@ -34,8 +34,8 @@ import {
   FileImage,
   Check
 } from 'lucide-react';
-import { Category, Order, OrderStatus, Product } from '../types';
-import { formatNpr, generateCustomerWhatsAppUpdateUrl } from '../utils/helpers';
+import { Category, Order, OrderStatus, Product, SiteSettings } from '../types';
+import { DEFAULT_SITE_SETTINGS, formatNpr, generateCustomerWhatsAppUpdateUrl } from '../utils/helpers';
 
 interface AdminDashboardProps {
   isOpen: boolean;
@@ -47,6 +47,8 @@ interface AdminDashboardProps {
   onUpdateProduct?: (updatedProduct: Product) => void;
   onAddProduct?: (newProduct: Product) => void;
   onDeleteProduct?: (productId: string) => void;
+  siteSettings?: SiteSettings;
+  onUpdateSiteSettings?: (settings: SiteSettings) => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -58,19 +60,42 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUpdateProductPrice,
   onUpdateProduct,
   onAddProduct,
-  onDeleteProduct
+  onDeleteProduct,
+  siteSettings,
+  onUpdateSiteSettings
 }) => {
   if (!isOpen) return null;
 
-  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'customers'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'customers' | 'settings'>('orders');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   
+  // Site settings local state
+  const [localSiteSettings, setLocalSiteSettings] = useState<SiteSettings>(
+    siteSettings || DEFAULT_SITE_SETTINGS
+  );
+  const [siteSettingsSuccessMsg, setSiteSettingsSuccessMsg] = useState<string>('');
+  const siteLogoFileInputRef = useRef<HTMLInputElement>(null);
+
   // Product Edit state
   const [editingPriceMap, setEditingPriceMap] = useState<Record<string, number>>({});
   const [editingProductModal, setEditingProductModal] = useState<Product | null>(null);
   const [uploadError, setUploadError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSiteLogoUpload = (file: File) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (reader.result) {
+        setLocalSiteSettings((prev) => ({
+          ...prev,
+          logoUrl: reader.result as string
+        }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleDeviceImageUpload = (file: File) => {
     setUploadError('');
@@ -321,6 +346,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               }`}
             >
               Subscription Status Tracker
+            </button>
+
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`px-4 py-2 text-xs font-extrabold rounded-t-xl transition-all border-t border-x flex items-center gap-1.5 ${
+                activeTab === 'settings'
+                  ? 'bg-[#0e1420] text-emerald-400 border-emerald-500/40'
+                  : 'text-slate-400 hover:text-slate-200 border-transparent'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Website Logo & Settings</span>
             </button>
           </div>
 
@@ -575,6 +612,170 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: WEBSITE LOGO & SETTINGS */}
+        {activeTab === 'settings' && (
+          <div className="p-4 sm:p-6 space-y-6 overflow-y-auto flex-1 max-w-3xl">
+            <div className="space-y-1">
+              <h3 className="font-black text-lg text-white flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-emerald-400" />
+                <span>Website Brand & Logo Configuration</span>
+              </h3>
+              <p className="text-xs text-slate-400">
+                Customize your website logo image, store brand name, and support details instantly.
+              </p>
+            </div>
+
+            {siteSettingsSuccessMsg && (
+              <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-400" />
+                <span>{siteSettingsSuccessMsg}</span>
+              </div>
+            )}
+
+            <div className="p-5 rounded-2xl bg-slate-900 border border-white/10 space-y-5">
+              
+              {/* Website Logo Upload Section */}
+              <div className="space-y-3 pb-5 border-b border-white/10">
+                <label className="text-xs font-bold text-slate-300 block">
+                  Website Main Logo Image:
+                </label>
+                
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  {/* Logo Preview Container */}
+                  <div className="w-20 h-20 rounded-2xl bg-slate-950 border-2 border-emerald-500/40 flex items-center justify-center p-2 shadow-xl overflow-hidden relative group">
+                    {localSiteSettings.logoUrl ? (
+                      <img 
+                        src={localSiteSettings.logoUrl} 
+                        alt="Website Logo" 
+                        className="w-full h-full object-cover rounded-xl"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 p-[1.5px] rounded-xl">
+                        <div className="w-full h-full bg-[#070a12] rounded-[10px] flex items-center justify-center font-black text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-300">
+                          S<span className="text-emerald-400">X</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Upload Controls */}
+                  <div className="flex-1 space-y-2">
+                    <input 
+                      type="file" 
+                      ref={siteLogoFileInputRef}
+                      accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleSiteLogoUpload(file);
+                      }}
+                    />
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => siteLogoFileInputRef.current?.click()}
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition-all"
+                      >
+                        <Upload className="w-4 h-4" />
+                        <span>Upload Logo from Device</span>
+                      </button>
+
+                      {localSiteSettings.logoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setLocalSiteSettings(prev => ({ ...prev, logoUrl: '' }))}
+                          className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition-all"
+                        >
+                          Reset to Default
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Supports PNG, JPG, WEBP, SVG (Max 5MB). Recommended size: square or 1:1 aspect ratio.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Text Fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300 block">
+                    Website Name:
+                  </label>
+                  <input
+                    type="text"
+                    value={localSiteSettings.siteName}
+                    onChange={(e) => setLocalSiteSettings(prev => ({ ...prev, siteName: e.target.value }))}
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                    placeholder="e.g. SubX Nepal"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300 block">
+                    Website Sub-Tagline:
+                  </label>
+                  <input
+                    type="text"
+                    value={localSiteSettings.tagline}
+                    onChange={(e) => setLocalSiteSettings(prev => ({ ...prev, tagline: e.target.value }))}
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                    placeholder="e.g. PREMIUM DIGITAL STORE"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300 block">
+                    WhatsApp Admin Support Number:
+                  </label>
+                  <input
+                    type="text"
+                    value={localSiteSettings.whatsappNumber}
+                    onChange={(e) => setLocalSiteSettings(prev => ({ ...prev, whatsappNumber: e.target.value }))}
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                    placeholder="e.g. 9765617156"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300 block">
+                    Delivery Speed Tagline:
+                  </label>
+                  <input
+                    type="text"
+                    value={localSiteSettings.deliveryTagline}
+                    onChange={(e) => setLocalSiteSettings(prev => ({ ...prev, deliveryTagline: e.target.value }))}
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                    placeholder="e.g. 5-15 Min Instant Delivery"
+                  />
+                </div>
+              </div>
+
+              {/* Save Button */}
+              <div className="pt-3 border-t border-white/10 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onUpdateSiteSettings) {
+                      onUpdateSiteSettings(localSiteSettings);
+                      setSiteSettingsSuccessMsg('Website Logo & Branding settings saved successfully!');
+                      setTimeout(() => setSiteSettingsSuccessMsg(''), 3000);
+                    }
+                  }}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-extrabold text-xs shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Save Website Settings</span>
+                </button>
+              </div>
+
             </div>
           </div>
         )}

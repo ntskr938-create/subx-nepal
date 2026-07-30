@@ -13,20 +13,27 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { FULL_WHATSAPP_PHONE, WHATSAPP_NUMBER, generateGeneralWhatsAppUrl } from '../utils/helpers';
+import { SiteSettings } from '../types';
 
 interface HeaderProps {
   onOpenCheckout: (productId?: string) => void;
   onOpenOrderTracker: () => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
+  siteSettings?: SiteSettings;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenOrderTracker,
   searchQuery,
-  setSearchQuery
+  setSearchQuery,
+  siteSettings
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const siteName = siteSettings?.siteName || 'SubX Nepal';
+  const siteTagline = siteSettings?.tagline || 'PREMIUM DIGITAL STORE';
+  const customLogoUrl = siteSettings?.logoUrl || '';
 
   const scrollToSection = (id: string) => {
     setMobileMenuOpen(false);
@@ -43,21 +50,30 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Brand Logo */}
         <div className="flex items-center gap-3">
           <a href="#" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 p-[1.5px] shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/40 transition-all duration-300">
-              <div className="w-full h-full bg-[#070a12] rounded-[10px] flex items-center justify-center font-black text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-300">
-                S<span className="text-emerald-400">X</span>
+            {customLogoUrl ? (
+              <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-950 border border-white/20 shadow-lg group-hover:border-emerald-400 transition-all">
+                <img 
+                  src={customLogoUrl} 
+                  alt={siteName} 
+                  className="w-full h-full object-cover" 
+                  referrerPolicy="no-referrer"
+                />
               </div>
-            </div>
+            ) : (
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 p-[1.5px] shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/40 transition-all duration-300">
+                <div className="w-full h-full bg-[#070a12] rounded-[10px] flex items-center justify-center font-black text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-300">
+                  S<span className="text-emerald-400">X</span>
+                </div>
+              </div>
+            )}
+            
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
                 <span className="font-black text-xl tracking-tight text-white font-sans">
-                  Sub<span className="text-emerald-400">X</span>
-                </span>
-                <span className="text-[10px] uppercase tracking-widest font-black px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  NEPAL
+                  {siteName}
                 </span>
               </div>
-              <span className="text-[9px] font-bold text-slate-400 tracking-wider">PREMIUM DIGITAL STORE</span>
+              <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase">{siteTagline}</span>
             </div>
           </a>
         </div>
