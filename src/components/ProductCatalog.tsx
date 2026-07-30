@@ -185,16 +185,16 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
 
                 <div>
                   {/* Card Header */}
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${product.iconBg} p-2.5 flex items-center justify-center shadow-md shadow-black/40`}>
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-3 w-full">
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#090d16] border border-white/15 p-2 flex items-center justify-center shadow-xl relative overflow-hidden group-hover:border-emerald-400/50 transition-all shrink-0">
                         {renderIcon(product.logoIcon)}
                       </div>
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 block">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 block truncate">
                           {product.brand}
                         </span>
-                        <h3 className="font-extrabold text-base text-white group-hover:text-emerald-300 transition-colors">
+                        <h3 className="font-extrabold text-base text-white group-hover:text-emerald-300 transition-colors leading-snug truncate">
                           {product.title}
                         </h3>
                       </div>

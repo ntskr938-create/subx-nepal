@@ -851,6 +851,170 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 />
               </div>
 
+              {/* Stock & Delivery Info */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-300 font-bold block mb-1">Stock Status:</label>
+                  <input
+                    type="text"
+                    placeholder="Instant Auto-Deliver or In Stock"
+                    value={editingProductModal.stockStatus || 'Instant Auto-Deliver'}
+                    onChange={(e) => setEditingProductModal({ ...editingProductModal, stockStatus: e.target.value })}
+                    className="w-full bg-slate-950 border border-white/15 rounded-lg p-2.5 text-white focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-300 font-bold block mb-1">Delivery Time Guarantee:</label>
+                  <input
+                    type="text"
+                    placeholder="5-15 Mins"
+                    value={editingProductModal.deliveryTime || '5-15 Mins'}
+                    onChange={(e) => setEditingProductModal({ ...editingProductModal, deliveryTime: e.target.value })}
+                    className="w-full bg-slate-950 border border-white/15 rounded-lg p-2.5 text-white focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* Plans & Pricing Section */}
+              <div className="p-4 rounded-xl bg-slate-950 border border-white/15 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                  <label className="text-emerald-400 font-extrabold text-xs flex items-center gap-1.5 uppercase">
+                    <Tag className="w-4 h-4 text-emerald-400" />
+                    <span>Plans & NPR Pricing</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newPlanId = `${editingProductModal.id}-plan-${Date.now()}`;
+                      setEditingProductModal({
+                        ...editingProductModal,
+                        plans: [
+                          ...editingProductModal.plans,
+                          { id: newPlanId, name: '6 Months', duration: '6 Months', priceNpr: 1000 }
+                        ]
+                      });
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold flex items-center gap-1"
+                  >
+                    <span>+ Add Plan</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                  {editingProductModal.plans.map((pl, idx) => (
+                    <div key={pl.id} className="p-2.5 rounded-lg bg-slate-900 border border-white/10 flex flex-col sm:flex-row items-center gap-2">
+                      <div className="flex-1 w-full grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <span className="text-[10px] text-slate-400 block">Plan Name:</span>
+                          <input
+                            type="text"
+                            value={pl.name}
+                            onChange={(e) => {
+                              const updatedPlans = [...editingProductModal.plans];
+                              updatedPlans[idx] = { ...updatedPlans[idx], name: e.target.value, duration: e.target.value };
+                              setEditingProductModal({ ...editingProductModal, plans: updatedPlans });
+                            }}
+                            className="w-full bg-slate-950 border border-white/15 rounded px-2 py-1 text-white font-bold"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 block">NPR Price (Rs.):</span>
+                          <input
+                            type="number"
+                            value={pl.priceNpr}
+                            onChange={(e) => {
+                              const updatedPlans = [...editingProductModal.plans];
+                              updatedPlans[idx] = { ...updatedPlans[idx], priceNpr: parseInt(e.target.value, 10) || 0 };
+                              setEditingProductModal({ ...editingProductModal, plans: updatedPlans });
+                            }}
+                            className="w-full bg-slate-950 border border-white/15 rounded px-2 py-1 text-emerald-400 font-extrabold font-mono"
+                          />
+                        </div>
+                        <div className="col-span-2 sm:col-span-1 flex items-center pt-3">
+                          <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-300">
+                            <input
+                              type="checkbox"
+                              checked={pl.popular || false}
+                              onChange={(e) => {
+                                const updatedPlans = [...editingProductModal.plans];
+                                updatedPlans[idx] = { ...updatedPlans[idx], popular: e.target.checked };
+                                setEditingProductModal({ ...editingProductModal, plans: updatedPlans });
+                              }}
+                              className="rounded bg-slate-950 border-white/20 text-emerald-500 focus:ring-emerald-500"
+                            />
+                            <span>Popular Badge</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {editingProductModal.plans.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updatedPlans = editingProductModal.plans.filter((_, i) => i !== idx);
+                            setEditingProductModal({ ...editingProductModal, plans: updatedPlans });
+                          }}
+                          className="p-1.5 rounded bg-rose-500/20 text-rose-300 hover:bg-rose-500/40 shrink-0"
+                          title="Remove Plan"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Product Features List Editor */}
+              <div className="p-4 rounded-xl bg-slate-950 border border-white/15 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                  <label className="text-emerald-400 font-extrabold text-xs flex items-center gap-1.5 uppercase">
+                    <Check className="w-4 h-4 text-emerald-400" />
+                    <span>Product Feature Highlights (Bullet Points)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingProductModal({
+                        ...editingProductModal,
+                        features: [...editingProductModal.features, 'Instant Account Activation & Warranty']
+                      });
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold flex items-center gap-1"
+                  >
+                    <span>+ Add Feature</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                  {editingProductModal.features.map((feat, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={feat}
+                        onChange={(e) => {
+                          const updatedFeats = [...editingProductModal.features];
+                          updatedFeats[idx] = e.target.value;
+                          setEditingProductModal({ ...editingProductModal, features: updatedFeats });
+                        }}
+                        className="flex-1 bg-slate-900 border border-white/15 rounded-lg p-2 text-white text-xs focus:border-emerald-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updatedFeats = editingProductModal.features.filter((_, i) => i !== idx);
+                          setEditingProductModal({ ...editingProductModal, features: updatedFeats });
+                        }}
+                        className="p-2 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/40 shrink-0"
+                        title="Delete Feature"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Submit / Cancel Buttons */}
               <div className="pt-3 border-t border-white/10 flex items-center justify-end gap-2">
                 <button
