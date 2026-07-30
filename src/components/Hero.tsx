@@ -64,7 +64,7 @@ export const Hero: React.FC<HeroProps> = ({ onBuyNowClick, onOpenCheckoutWithPro
                 </span>
               </h1>
               
-              <p className="text-lg sm:text-2xl font-bold text-emerald-400 font-sans tracking-wide">
+              <p className="text-lg sm:text-2xl font-black text-emerald-400 font-sans tracking-wide">
                 "Premium Digital Subscriptions at Best Prices"
               </p>
 
@@ -77,21 +77,11 @@ export const Hero: React.FC<HeroProps> = ({ onBuyNowClick, onOpenCheckoutWithPro
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
               <button
                 onClick={onBuyNowClick}
-                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2.5"
+                className="w-full sm:w-auto px-10 py-4 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-white font-black text-base shadow-2xl shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-3 cursor-pointer group"
               >
-                <span>Buy Now</span>
-                <ArrowRight className="w-4 h-4" />
+                <span>Browse Store Catalog</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
-
-              <a
-                href={generateGeneralWhatsAppUrl()}
-                target="_blank"
-                rel="noreferrer"
-                className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-emerald-500/40 text-emerald-300 hover:text-white font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-black/40"
-              >
-                <MessageCircle className="w-5 h-5 fill-emerald-500 text-slate-900" />
-                <span>Contact WhatsApp (+977 {WHATSAPP_NUMBER})</span>
-              </a>
             </div>
 
             {/* Feature Highlights Grid */}

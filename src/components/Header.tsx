@@ -37,54 +37,27 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#0b0f17]/90 backdrop-blur-xl border-b border-white/10 text-white">
-      {/* Top Announcement Bar */}
-      <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-indigo-950 text-xs py-1.5 px-4 border-b border-emerald-500/20">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 text-slate-300">
-          <div className="flex items-center gap-2 font-medium">
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="text-emerald-400 font-semibold">5-15 Min Instant Delivery</span> in Nepal
-            <span className="hidden md:inline text-slate-500">|</span>
-            <span className="hidden md:inline">Accepted: eSewa, Khalti & Bank Transfer</span>
-          </div>
-          
-          <div className="flex items-center gap-4 text-xs font-semibold">
-            <a 
-              href={generateGeneralWhatsAppUrl()}
-              target="_blank" 
-              rel="noreferrer"
-              className="flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 transition-colors"
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-              <span>WhatsApp: +977 {WHATSAPP_NUMBER}</span>
-            </a>
-          </div>
-        </div>
-      </div>
-
+    <header className="sticky top-0 z-40 bg-[#070a12]/90 backdrop-blur-xl border-b border-white/10 text-white shadow-2xl">
       {/* Main Navbar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         {/* Brand Logo */}
         <div className="flex items-center gap-3">
           <a href="#" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-indigo-600 p-[1.5px] shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/40 transition-all duration-300">
-              <div className="w-full h-full bg-[#0b0f17] rounded-[10px] flex items-center justify-center font-black text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-300">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 p-[1.5px] shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/40 transition-all duration-300">
+              <div className="w-full h-full bg-[#070a12] rounded-[10px] flex items-center justify-center font-black text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-300">
                 S<span className="text-emerald-400">X</span>
               </div>
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-xl tracking-tight text-white font-sans">
+                <span className="font-black text-xl tracking-tight text-white font-sans">
                   Sub<span className="text-emerald-400">X</span>
                 </span>
-                <span className="text-[10px] uppercase tracking-widest font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <span className="text-[10px] uppercase tracking-widest font-black px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                   NEPAL
                 </span>
               </div>
-              <span className="text-[10px] text-slate-400 tracking-wider">PREMIUM SUBSCRIPTIONS</span>
+              <span className="text-[9px] font-bold text-slate-400 tracking-wider">PREMIUM DIGITAL STORE</span>
             </div>
           </a>
         </div>
