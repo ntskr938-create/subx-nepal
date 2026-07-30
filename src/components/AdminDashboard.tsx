@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   X, 
   Search, 
@@ -28,7 +28,11 @@ import {
   Palette,
   Music,
   Cpu,
-  Tag
+  Tag,
+  Upload,
+  RotateCcw,
+  FileImage,
+  Check
 } from 'lucide-react';
 import { Category, Order, OrderStatus, Product } from '../types';
 import { formatNpr, generateCustomerWhatsAppUpdateUrl } from '../utils/helpers';
@@ -65,20 +69,58 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Product Edit state
   const [editingPriceMap, setEditingPriceMap] = useState<Record<string, number>>({});
   const [editingProductModal, setEditingProductModal] = useState<Product | null>(null);
+  const [uploadError, setUploadError] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Helper render icon
+  const handleDeviceImageUpload = (file: File) => {
+    setUploadError('');
+    if (!file) return;
+
+    // Validate image format: PNG, JPG, JPEG, WEBP
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (!validTypes.includes(file.type.toLowerCase())) {
+      setUploadError('Unsupported file format! Please upload a PNG, JPG, JPEG, or WEBP image.');
+      return;
+    }
+
+    // Validate image file size <= 5MB
+    const maxSizeInBytes = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSizeInBytes) {
+      setUploadError('File size exceeds the 5MB limit. Please choose an image under 5MB.');
+      return;
+    }
+
+    // Convert to Base64
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (reader.result && editingProductModal) {
+        setEditingProductModal({
+          ...editingProductModal,
+          logoIcon: reader.result as string
+        });
+      }
+    };
+    reader.onerror = () => {
+      setUploadError('Failed to read image file from device. Please try again.');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Helper render icon preview
   const renderLogoPreview = (logoIcon: string) => {
     if (
+      !logoIcon ||
       logoIcon.startsWith('http://') || 
       logoIcon.startsWith('https://') || 
       logoIcon.startsWith('data:') || 
       logoIcon.startsWith('/')
     ) {
+      if (!logoIcon) return <Sparkles className="w-5 h-5 text-emerald-400" />;
       return (
         <img 
           src={logoIcon} 
           alt="Logo" 
-          className="w-6 h-6 object-contain rounded" 
+          className="w-full h-full object-contain rounded-lg" 
           referrerPolicy="no-referrer"
           onError={(e) => {
             (e.target as HTMLElement).style.display = 'none';
@@ -86,17 +128,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         />
       );
     }
-    switch (logoIcon) {
-      case 'Sparkles': return <Sparkles className="w-5 h-5 text-amber-300" />;
-      case 'Youtube': return <Youtube className="w-5 h-5 text-red-400" />;
-      case 'Video': return <Video className="w-5 h-5 text-cyan-300" />;
-      case 'Tv': return <Tv className="w-5 h-5 text-red-500" />;
-      case 'Bot': return <Bot className="w-5 h-5 text-emerald-400" />;
-      case 'Palette': return <Palette className="w-5 h-5 text-purple-300" />;
-      case 'Music': return <Music className="w-5 h-5 text-emerald-300" />;
-      case 'Cpu': return <Cpu className="w-5 h-5 text-amber-400" />;
-      default: return <Sparkles className="w-5 h-5 text-emerald-400" />;
-    }
+    const iconKey = logoIcon.toLowerCase();
+    if (iconKey.includes('bot') || iconKey.includes('chatgpt')) return <Bot className="w-5 h-5 text-emerald-400" />;
+    if (iconKey.includes('tv') || iconKey.includes('netflix')) return <Tv className="w-5 h-5 text-red-500" />;
+    if (iconKey.includes('palette') || iconKey.includes('canva')) return <Palette className="w-5 h-5 text-purple-300" />;
+    if (iconKey.includes('youtube')) return <Youtube className="w-5 h-5 text-red-400" />;
+    if (iconKey.includes('music') || iconKey.includes('spotify')) return <Music className="w-5 h-5 text-emerald-300" />;
+    if (iconKey.includes('video') || iconKey.includes('prime')) return <Video className="w-5 h-5 text-cyan-300" />;
+    if (iconKey.includes('cpu')) return <Cpu className="w-5 h-5 text-amber-400" />;
+    if (iconKey.includes('gemini') || iconKey.includes('sparkles')) return <Sparkles className="w-5 h-5 text-amber-300" />;
+    return <Sparkles className="w-5 h-5 text-emerald-400" />;
   };
 
   // Stats Calculations
@@ -622,60 +663,181 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               </div>
 
-              {/* Logo / Image URL Customization */}
-              <div className="p-3.5 rounded-xl bg-slate-950 border border-emerald-500/30 space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-emerald-400 font-bold flex items-center gap-1.5">
-                    <ImageIcon className="w-4 h-4" />
-                    <span>Product Logo (Image URL or Icon Preset)</span>
+              {/* Product Logo & Image Upload System */}
+              <div className="p-4 rounded-xl bg-slate-950 border border-emerald-500/40 space-y-4 shadow-inner">
+                <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                  <label className="text-emerald-400 font-extrabold text-xs flex items-center gap-1.5 uppercase tracking-wide">
+                    <ImageIcon className="w-4 h-4 text-emerald-400" />
+                    <span>Product Logo & Image Upload</span>
                   </label>
-                  <div className="w-8 h-8 rounded-lg bg-slate-900 border border-white/20 flex items-center justify-center">
-                    {renderLogoPreview(editingProductModal.logoIcon)}
+
+                  {/* Indicator tag */}
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                    {editingProductModal.logoIcon?.startsWith('data:') 
+                      ? 'Base64 Device Image' 
+                      : editingProductModal.logoIcon?.startsWith('http') 
+                        ? 'Image URL' 
+                        : 'Preset Icon Active'}
+                  </span>
+                </div>
+
+                {/* 1. Device Image Upload Button & Dropzone */}
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold text-slate-300 block">1. Upload Image from Device (PNG, JPG, WEBP • Max 5MB):</span>
+                  
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/png, image/jpeg, image/jpg, image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) {
+                        handleDeviceImageUpload(e.target.files[0]);
+                      }
+                      e.target.value = '';
+                    }}
+                  />
+
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-emerald-500/40 hover:border-emerald-400 bg-slate-900/80 hover:bg-slate-900 rounded-xl p-4 text-center cursor-pointer transition-all duration-200 group flex flex-col items-center justify-center gap-2"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                      <Upload className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-white group-hover:text-emerald-300">
+                        Click to Choose Image File
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        Supports PNG, JPG, JPEG, WEBP format up to 5MB size
+                      </p>
+                    </div>
+                  </div>
+
+                  {uploadError && (
+                    <div className="flex items-center gap-1.5 p-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-[11px] font-semibold">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{uploadError}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Image Preview & Control Box */}
+                {(editingProductModal.logoIcon?.startsWith('data:') || editingProductModal.logoIcon?.startsWith('http') || editingProductModal.logoIcon?.startsWith('/')) && (
+                  <div className="p-3 rounded-xl bg-slate-900 border border-white/10 space-y-3">
+                    <span className="text-[11px] font-bold text-slate-300 block">Uploaded Image Preview:</span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-16 h-16 rounded-xl bg-slate-950 border border-emerald-500/40 p-1.5 flex items-center justify-center shrink-0 shadow-lg relative overflow-hidden">
+                        <img 
+                          src={editingProductModal.logoIcon} 
+                          alt="Product Logo Preview" 
+                          className="w-full h-full object-contain rounded-lg"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-1 flex-1">
+                        <p className="text-xs font-bold text-white">Custom Product Image</p>
+                        <p className="text-[10px] text-emerald-400 font-mono truncate max-w-[200px] sm:max-w-[280px]">
+                          {editingProductModal.logoIcon.substring(0, 42)}...
+                        </p>
+
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold transition-all flex items-center gap-1"
+                          >
+                            <Upload className="w-3 h-3" />
+                            <span>Replace Image</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingProductModal({
+                                ...editingProductModal,
+                                logoIcon: 'Bot'
+                              });
+                              setUploadError('');
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 text-rose-300 text-[11px] font-bold transition-all flex items-center gap-1"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Remove Image</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Fallback Preset Icons Selector */}
+                <div className="space-y-2 pt-2 border-t border-white/10">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-300 block">
+                      2. Fallback Preset Icons:
+                    </span>
+                    <span className="text-[10px] text-slate-400">Select standard icon if no image uploaded</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                    {[
+                      { key: 'Bot', name: 'ChatGPT/Bot', icon: <Bot className="w-4 h-4 text-emerald-400" /> },
+                      { key: 'Tv', name: 'Netflix', icon: <Tv className="w-4 h-4 text-red-500" /> },
+                      { key: 'Palette', name: 'Canva', icon: <Palette className="w-4 h-4 text-purple-300" /> },
+                      { key: 'Youtube', name: 'YouTube', icon: <Youtube className="w-4 h-4 text-red-400" /> },
+                      { key: 'Music', name: 'Spotify', icon: <Music className="w-4 h-4 text-emerald-300" /> },
+                      { key: 'Video', name: 'Prime Video', icon: <Video className="w-4 h-4 text-cyan-300" /> },
+                      { key: 'Gemini', name: 'Gemini AI', icon: <Sparkles className="w-4 h-4 text-amber-300" /> },
+                      { key: 'Sparkles', name: 'Sparkles', icon: <Sparkles className="w-4 h-4 text-emerald-400" /> },
+                      { key: 'Cpu', name: 'CPU', icon: <Cpu className="w-4 h-4 text-amber-400" /> }
+                    ].map((ic) => {
+                      const isSelected = editingProductModal.logoIcon?.toLowerCase() === ic.key.toLowerCase() || 
+                        (ic.key === 'Gemini' && editingProductModal.logoIcon?.toLowerCase() === 'sparkles');
+                      
+                      return (
+                        <button
+                          type="button"
+                          key={ic.key}
+                          onClick={() => {
+                            setEditingProductModal({ ...editingProductModal, logoIcon: ic.key });
+                            setUploadError('');
+                          }}
+                          className={`p-2 rounded-xl text-[11px] font-bold border transition-all flex items-center justify-center gap-1.5 ${
+                            isSelected
+                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500 shadow-md shadow-emerald-950/40'
+                              : 'bg-slate-900 text-slate-400 border-white/10 hover:text-white hover:border-white/20'
+                          }`}
+                        >
+                          {ic.icon}
+                          <span className="truncate">{ic.name}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-slate-400 text-[11px] block mb-1">
-                    Enter Image URL (http://...) or preset icon name:
+                {/* 4. Direct Image Web URL Input */}
+                <div className="pt-2 border-t border-white/10 space-y-1">
+                  <label className="text-[11px] text-slate-400 block font-medium">
+                    Or enter direct Image Web URL (http://...):
                   </label>
                   <input
                     type="text"
-                    placeholder="https://example.com/logo.png or Bot, Youtube, Tv, Palette..."
-                    value={editingProductModal.logoIcon}
-                    onChange={(e) => setEditingProductModal({ ...editingProductModal, logoIcon: e.target.value })}
-                    className="w-full bg-slate-900 border border-white/15 rounded-lg p-2.5 text-white font-mono text-xs focus:border-emerald-500"
+                    placeholder="https://example.com/logo.png"
+                    value={editingProductModal.logoIcon?.startsWith('data:') ? '' : editingProductModal.logoIcon}
+                    onChange={(e) => {
+                      setEditingProductModal({ ...editingProductModal, logoIcon: e.target.value });
+                      setUploadError('');
+                    }}
+                    className="w-full bg-slate-900 border border-white/15 rounded-lg p-2.5 text-white font-mono text-xs focus:border-emerald-500 placeholder-slate-600"
                   />
                 </div>
 
-                {/* Preset Icon Selector Buttons */}
-                <div>
-                  <span className="text-slate-400 text-[10px] block mb-1.5">Quick Preset Icons:</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {[
-                      { name: 'Bot', label: '🤖 ChatGPT/Bot' },
-                      { name: 'Tv', label: '📺 Netflix/Tv' },
-                      { name: 'Palette', label: '🎨 Canva/Palette' },
-                      { name: 'Youtube', label: '▶️ Youtube' },
-                      { name: 'Music', label: '🎵 Spotify/Music' },
-                      { name: 'Video', label: '🎥 Prime/Video' },
-                      { name: 'Sparkles', label: '✨ Sparkles' },
-                      { name: 'Cpu', label: '⚡ Cpu' }
-                    ].map((ic) => (
-                      <button
-                        type="button"
-                        key={ic.name}
-                        onClick={() => setEditingProductModal({ ...editingProductModal, logoIcon: ic.name })}
-                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold border transition-all ${
-                          editingProductModal.logoIcon === ic.name
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500'
-                            : 'bg-slate-900 text-slate-400 border-white/10 hover:text-white'
-                        }`}
-                      >
-                        {ic.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               {/* Description */}

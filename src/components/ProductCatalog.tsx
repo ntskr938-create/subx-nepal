@@ -43,34 +43,54 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
     }));
   };
 
-  // Icon mapping (supports image URLs and preset Lucide icons)
+  // Icon mapping (supports uploaded Base64 images, URLs, and preset Lucide icons)
   const renderIcon = (logoIcon: string) => {
     if (
+      !logoIcon ||
       logoIcon.startsWith('http://') || 
       logoIcon.startsWith('https://') || 
       logoIcon.startsWith('data:') || 
       logoIcon.startsWith('/')
     ) {
+      if (!logoIcon) return <Sparkles className="w-5 h-5 text-emerald-400" />;
       return (
         <img 
           src={logoIcon} 
           alt="Product Logo" 
-          className="w-6 h-6 object-contain rounded" 
+          className="w-full h-full object-contain rounded-lg" 
           referrerPolicy="no-referrer" 
+          onError={(e) => {
+            (e.target as HTMLElement).style.display = 'none';
+          }} 
         />
       );
     }
-    switch (logoIcon) {
-      case 'Sparkles': return <Sparkles className="w-5 h-5 text-amber-300" />;
-      case 'Youtube': return <Youtube className="w-5 h-5 text-red-400" />;
-      case 'Video': return <Video className="w-5 h-5 text-cyan-300" />;
-      case 'Tv': return <Tv className="w-5 h-5 text-red-500" />;
-      case 'Bot': return <Bot className="w-5 h-5 text-emerald-400" />;
-      case 'Palette': return <Palette className="w-5 h-5 text-purple-300" />;
-      case 'Music': return <Music className="w-5 h-5 text-emerald-300" />;
-      case 'Cpu': return <Cpu className="w-5 h-5 text-amber-400" />;
-      default: return <Sparkles className="w-5 h-5 text-emerald-400" />;
+    const iconKey = logoIcon.toLowerCase();
+    if (iconKey.includes('bot') || iconKey.includes('chatgpt')) {
+      return <Bot className="w-5 h-5 text-emerald-400" />;
     }
+    if (iconKey.includes('tv') || iconKey.includes('netflix')) {
+      return <Tv className="w-5 h-5 text-red-500" />;
+    }
+    if (iconKey.includes('palette') || iconKey.includes('canva')) {
+      return <Palette className="w-5 h-5 text-purple-300" />;
+    }
+    if (iconKey.includes('youtube')) {
+      return <Youtube className="w-5 h-5 text-red-400" />;
+    }
+    if (iconKey.includes('music') || iconKey.includes('spotify')) {
+      return <Music className="w-5 h-5 text-emerald-300" />;
+    }
+    if (iconKey.includes('video') || iconKey.includes('prime')) {
+      return <Video className="w-5 h-5 text-cyan-300" />;
+    }
+    if (iconKey.includes('cpu')) {
+      return <Cpu className="w-5 h-5 text-amber-400" />;
+    }
+    if (iconKey.includes('gemini') || iconKey.includes('sparkles')) {
+      return <Sparkles className="w-5 h-5 text-amber-300" />;
+    }
+    return <Sparkles className="w-5 h-5 text-emerald-400" />;
   };
 
   // Filter products by category & search query
