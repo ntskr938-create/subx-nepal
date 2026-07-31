@@ -1,4 +1,4 @@
-import { Product, PaymentDetails, FAQItem, LiveOrderFeed, Order } from '../types';
+import { Product, PaymentDetails, FAQItem, LiveOrderFeed, Order, PromoPoster } from '../types';
 
 export const INITIAL_PRODUCTS: Product[] = [
   {
@@ -379,4 +379,51 @@ export const LIVE_ORDERS_FEED: LiveOrderFeed[] = [
   { id: '4', customerName: 'Kiran N.', city: 'Biratnagar', productTitle: 'Netflix 4K Ultra HD', plan: 'NPR 499', timeAgo: '18 mins ago' },
   { id: '5', customerName: 'Pooja T.', city: 'Chitwan', productTitle: 'Canva Pro 1 Year', plan: 'NPR 1299', timeAgo: '25 mins ago' },
   { id: '6', customerName: 'Nabin R.', city: 'Butwal', productTitle: 'ChatGPT Plus GPT-4o', plan: 'NPR 1499', timeAgo: '32 mins ago' }
+];
+
+export const INITIAL_PROMO_POSTERS: PromoPoster[] = [
+  {
+    id: 'poster-gemini',
+    imageUrl: '',
+    title: 'Google Gemini AI Pro',
+    subtitle: 'Multimodal AI & 2TB Cloud Storage • Special Offer',
+    buttonText: 'Get Gemini AI',
+    productId: 'gemini-ai',
+    isActive: true,
+    displayOrder: 1,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'poster-capcut',
+    imageUrl: '',
+    title: 'CapCut Pro — Best Price',
+    subtitle: 'Unlock 4K Export, Auto-Captions & Pro Templates',
+    buttonText: 'Buy CapCut Pro',
+    productId: 'capcut-pro',
+    isActive: true,
+    displayOrder: 2,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'poster-netflix',
+    imageUrl: '',
+    title: 'Netflix 4K Ultra HD',
+    subtitle: 'Private Profile • Ultra HD Streaming Guaranteed',
+    buttonText: 'Get Netflix 4K',
+    productId: 'netflix-premium',
+    isActive: true,
+    displayOrder: 3,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'poster-yt',
+    imageUrl: '',
+    title: 'YouTube Premium',
+    subtitle: 'Ad-Free Video & YouTube Music Included',
+    buttonText: 'Get YouTube Pass',
+    productId: 'youtube-premium',
+    isActive: true,
+    displayOrder: 4,
+    createdAt: new Date().toISOString()
+  }
 ];

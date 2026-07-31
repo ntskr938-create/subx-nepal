@@ -1,11 +1,12 @@
-import { Order, Product, SiteSettings } from '../types';
+import { Order, Product, PromoPoster, SiteSettings } from '../types';
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   siteName: 'SubX Nepal',
   tagline: 'PREMIUM DIGITAL STORE',
   logoUrl: '',
   whatsappNumber: '9765617156',
-  deliveryTagline: '5-15 Min Instant Delivery'
+  deliveryTagline: '5-15 Min Instant Delivery',
+  showPromotionalPosters: true
 };
 
 export const WHATSAPP_NUMBER = '9765617156';
@@ -52,7 +53,7 @@ Thank you for choosing SubX Nepal! If you need any assistance, feel free to repl
 }
 
 // Server API Sync Helpers
-export async function fetchStoreDataFromServer(): Promise<{ products: Product[]; siteSettings: SiteSettings; orders: Order[] } | null> {
+export async function fetchStoreDataFromServer(): Promise<{ products: Product[]; siteSettings: SiteSettings; orders: Order[]; promoPosters?: PromoPoster[] } | null> {
   try {
     const res = await fetch('/api/store');
     if (res.ok) {
@@ -61,6 +62,7 @@ export async function fetchStoreDataFromServer(): Promise<{ products: Product[];
         saveProducts(data.products);
         saveSiteSettings(data.siteSettings);
         saveOrders(data.orders);
+        if (data.promoPosters) savePromoPosters(data.promoPosters);
         return data;
       }
     }
@@ -115,10 +117,46 @@ export async function syncOrdersToServer(orders: Order[], newOrder?: Order): Pro
   }
 }
 
+export async function syncPromoPostersToServer(promoPosters: PromoPoster[]): Promise<boolean> {
+  savePromoPosters(promoPosters);
+  try {
+    const res = await fetch('/api/store/posters', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ promoPosters })
+    });
+    return res.ok;
+  } catch (e) {
+    console.error('Error syncing promo posters to server', e);
+    return false;
+  }
+}
+
 // LocalStorage Persistence Helpers
 const LOCAL_STORAGE_PRODUCTS_KEY = 'subx_products_v1';
 const LOCAL_STORAGE_ORDERS_KEY = 'subx_orders_v1';
 const LOCAL_STORAGE_SETTINGS_KEY = 'subx_settings_v1';
+const LOCAL_STORAGE_POSTERS_KEY = 'subx_posters_v1';
+
+export function getSavedPromoPosters(defaultPosters: PromoPoster[]): PromoPoster[] {
+  try {
+    const saved = localStorage.getItem(LOCAL_STORAGE_POSTERS_KEY);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error('Failed to load promo posters from storage', e);
+  }
+  return defaultPosters;
+}
+
+export function savePromoPosters(posters: PromoPoster[]) {
+  try {
+    localStorage.setItem(LOCAL_STORAGE_POSTERS_KEY, JSON.stringify(posters));
+  } catch (e) {
+    console.error('Failed to save promo posters to storage', e);
+  }
+}
 
 export function getSavedSiteSettings(): SiteSettings {
   try {

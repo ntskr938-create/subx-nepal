@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
+import { PromoPosterCarousel } from './components/PromoPosterCarousel';
 import { ProductCatalog } from './components/ProductCatalog';
 import { TrustSection } from './components/TrustSection';
 import { FAQSection } from './components/FAQSection';
@@ -12,26 +13,29 @@ import { OrderTrackerModal } from './components/OrderTrackerModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AdminLoginModal } from './components/AdminLoginModal';
 
-import { INITIAL_PRODUCTS, INITIAL_ORDERS } from './data/initialData';
+import { INITIAL_PRODUCTS, INITIAL_ORDERS, INITIAL_PROMO_POSTERS } from './data/initialData';
 import { 
   fetchStoreDataFromServer,
   getSavedOrders, 
   getSavedProducts, 
+  getSavedPromoPosters,
   getSavedSiteSettings, 
   saveOrders, 
   saveProducts, 
   saveSiteSettings,
   syncOrdersToServer,
   syncProductsToServer,
+  syncPromoPostersToServer,
   syncSiteSettingsToServer
 } from './utils/helpers';
-import { Order, OrderStatus, Product, SiteSettings } from './types';
+import { Order, OrderStatus, Product, PromoPoster, SiteSettings } from './types';
 
 export default function App() {
   // Load initial state (from localStorage cache first, then sync from server)
   const [products, setProducts] = useState<Product[]>(() => getSavedProducts(INITIAL_PRODUCTS));
   const [orders, setOrders] = useState<Order[]>(() => getSavedOrders(INITIAL_ORDERS));
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => getSavedSiteSettings());
+  const [promoPosters, setPromoPosters] = useState<PromoPoster[]>(() => getSavedPromoPosters(INITIAL_PROMO_POSTERS));
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Fetch full store data from server DB on mount
@@ -44,6 +48,7 @@ export default function App() {
           if (serverData.products && serverData.products.length > 0) setProducts(serverData.products);
           if (serverData.siteSettings) setSiteSettings(serverData.siteSettings);
           if (serverData.orders) setOrders(serverData.orders);
+          if (serverData.promoPosters) setPromoPosters(serverData.promoPosters);
         }
         setIsLoaded(true);
       }
@@ -103,6 +108,11 @@ export default function App() {
     if (!isLoaded) return;
     syncSiteSettingsToServer(siteSettings);
   }, [siteSettings, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    syncPromoPostersToServer(promoPosters);
+  }, [promoPosters, isLoaded]);
 
   // Modal Triggers
   const handleOpenCheckout = (productId?: string, planId?: string) => {
@@ -197,6 +207,14 @@ export default function App() {
           onOpenCheckoutWithProduct={(prodId) => handleOpenCheckout(prodId)}
         />
 
+        {/* Compact Automatic Promotional Poster Banner Slider */}
+        <PromoPosterCarousel
+          posters={promoPosters}
+          siteSettings={siteSettings}
+          products={products}
+          onOpenCheckout={handleOpenCheckout}
+        />
+
         {/* Product Subscription Store Section */}
         <ProductCatalog
           products={products}
@@ -250,6 +268,8 @@ export default function App() {
             onDeleteProduct={handleDeleteProduct}
             siteSettings={siteSettings}
             onUpdateSiteSettings={setSiteSettings}
+            promoPosters={promoPosters}
+            onUpdatePromoPosters={setPromoPosters}
           />
         ) : (
           <AdminLoginModal

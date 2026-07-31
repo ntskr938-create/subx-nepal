@@ -2,14 +2,15 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
-import { INITIAL_PRODUCTS, INITIAL_ORDERS } from "./src/data/initialData";
+import { INITIAL_PRODUCTS, INITIAL_ORDERS, INITIAL_PROMO_POSTERS } from "./src/data/initialData";
 import { DEFAULT_SITE_SETTINGS } from "./src/utils/helpers";
-import { Product, Order, SiteSettings } from "./src/types";
+import { Product, Order, SiteSettings, PromoPoster } from "./src/types";
 
 interface StoreDB {
   products: Product[];
   siteSettings: SiteSettings;
   orders: Order[];
+  promoPosters: PromoPoster[];
 }
 
 const PORT = 3000;
@@ -26,7 +27,12 @@ function readDB(): StoreDB {
   try {
     if (fs.existsSync(DB_FILE)) {
       const data = fs.readFileSync(DB_FILE, "utf-8");
-      return JSON.parse(data);
+      const db = JSON.parse(data);
+      if (!db.promoPosters) {
+        db.promoPosters = INITIAL_PROMO_POSTERS;
+        saveDB(db);
+      }
+      return db;
     }
   } catch (error) {
     console.error("Error reading database file, using default data", error);
@@ -36,7 +42,8 @@ function readDB(): StoreDB {
   const defaultDB: StoreDB = {
     products: INITIAL_PRODUCTS,
     siteSettings: DEFAULT_SITE_SETTINGS,
-    orders: INITIAL_ORDERS
+    orders: INITIAL_ORDERS,
+    promoPosters: INITIAL_PROMO_POSTERS
   };
 
   saveDB(defaultDB);
@@ -217,6 +224,22 @@ async function startServer() {
       }
     } catch (error) {
       res.status(500).json({ error: "Failed to update order" });
+    }
+  });
+
+  // Save/update promo posters
+  app.post("/api/store/posters", (req, res) => {
+    try {
+      const { promoPosters } = req.body;
+      if (!Array.isArray(promoPosters)) {
+        return res.status(400).json({ error: "Invalid promoPosters array" });
+      }
+      const db = readDB();
+      db.promoPosters = promoPosters;
+      saveDB(db);
+      res.json({ success: true, promoPosters: db.promoPosters });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save promo posters" });
     }
   });
 

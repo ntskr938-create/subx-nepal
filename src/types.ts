@@ -80,10 +80,23 @@ export interface LiveOrderFeed {
   timeAgo: string;
 }
 
+export interface PromoPoster {
+  id: string;
+  imageUrl: string;
+  title: string;
+  subtitle: string;
+  buttonText: string;
+  productId?: string;
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
+}
+
 export interface SiteSettings {
   siteName: string;
   tagline: string;
   logoUrl: string; // Base64 or image URL
   whatsappNumber: string;
   deliveryTagline: string;
+  showPromotionalPosters?: boolean;
 }

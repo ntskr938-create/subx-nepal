@@ -32,9 +32,15 @@ import {
   Upload,
   RotateCcw,
   FileImage,
-  Check
+  Check,
+  Eye,
+  EyeOff,
+  ArrowUp,
+  ArrowDown,
+  Layers,
+  Sliders
 } from 'lucide-react';
-import { Category, Order, OrderStatus, Product, SiteSettings } from '../types';
+import { Category, Order, OrderStatus, Product, PromoPoster, SiteSettings } from '../types';
 import { DEFAULT_SITE_SETTINGS, formatNpr, generateCustomerWhatsAppUpdateUrl } from '../utils/helpers';
 
 interface AdminDashboardProps {
@@ -49,6 +55,8 @@ interface AdminDashboardProps {
   onDeleteProduct?: (productId: string) => void;
   siteSettings?: SiteSettings;
   onUpdateSiteSettings?: (settings: SiteSettings) => void;
+  promoPosters?: PromoPoster[];
+  onUpdatePromoPosters?: (posters: PromoPoster[]) => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -62,11 +70,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onAddProduct,
   onDeleteProduct,
   siteSettings,
-  onUpdateSiteSettings
+  onUpdateSiteSettings,
+  promoPosters = [],
+  onUpdatePromoPosters
 }) => {
   if (!isOpen) return null;
 
-  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'customers' | 'settings'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'customers' | 'posters' | 'settings'>('orders');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   
@@ -76,6 +86,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   );
   const [siteSettingsSuccessMsg, setSiteSettingsSuccessMsg] = useState<string>('');
   const siteLogoFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Poster state
+  const [localPosters, setLocalPosters] = useState<PromoPoster[]>(promoPosters);
+  const [editingPoster, setEditingPoster] = useState<PromoPoster | null>(null);
+  const [isAddPosterOpen, setIsAddPosterOpen] = useState(false);
+  const posterFileInputRef = useRef<HTMLInputElement>(null);
 
   // Product Edit state
   const [editingPriceMap, setEditingPriceMap] = useState<Record<string, number>>({});
@@ -98,6 +114,53 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       console.warn('Image upload to server failed, using base64 fallback', err);
     }
     return base64Str;
+  };
+
+  const handleSavePosters = (updated: PromoPoster[]) => {
+    setLocalPosters(updated);
+    if (onUpdatePromoPosters) {
+      onUpdatePromoPosters(updated);
+    }
+  };
+
+  const handleTogglePosterActive = (posterId: string) => {
+    const updated = localPosters.map((p) =>
+      p.id === posterId ? { ...p, isActive: !p.isActive } : p
+    );
+    handleSavePosters(updated);
+  };
+
+  const handleDeletePoster = (posterId: string) => {
+    if (window.confirm('Are you sure you want to delete this promotional poster?')) {
+      const updated = localPosters.filter((p) => p.id !== posterId);
+      handleSavePosters(updated);
+    }
+  };
+
+  const handleMovePoster = (index: number, direction: 'up' | 'down') => {
+    const targetIdx = direction === 'up' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= localPosters.length) return;
+
+    const updated = [...localPosters];
+    const temp = updated[index];
+    updated[index] = updated[targetIdx];
+    updated[targetIdx] = temp;
+
+    const reordered = updated.map((p, idx) => ({ ...p, displayOrder: idx + 1 }));
+    handleSavePosters(reordered);
+  };
+
+  const handlePosterImageUpload = (file: File) => {
+    if (!file || !editingPoster) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      if (reader.result) {
+        const base64Str = reader.result as string;
+        const uploadedUrl = await uploadImageToServer(base64Str);
+        setEditingPoster((prev) => (prev ? { ...prev, imageUrl: uploadedUrl } : null));
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSiteLogoUpload = (file: File) => {
@@ -370,6 +433,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('posters')}
+              className={`px-4 py-2 text-xs font-extrabold rounded-t-xl transition-all border-t border-x flex items-center gap-1.5 ${
+                activeTab === 'posters'
+                  ? 'bg-[#0e1420] text-purple-400 border-purple-500/40'
+                  : 'text-slate-400 hover:text-slate-200 border-transparent'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+              <span>Promotional Posters ({localPosters.length})</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('settings')}
               className={`px-4 py-2 text-xs font-extrabold rounded-t-xl transition-all border-t border-x flex items-center gap-1.5 ${
                 activeTab === 'settings'
@@ -377,7 +452,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   : 'text-slate-400 hover:text-slate-200 border-transparent'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <Sliders className="w-3.5 h-3.5 text-amber-400" />
               <span>Website Logo & Settings</span>
             </button>
           </div>
@@ -389,6 +464,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add New Product</span>
+            </button>
+          )}
+
+          {activeTab === 'posters' && (
+            <button
+              onClick={() => {
+                setEditingPoster({
+                  id: `poster_${Date.now()}`,
+                  title: '',
+                  subtitle: '',
+                  buttonText: 'Claim Offer',
+                  productId: products[0]?.id || '',
+                  imageUrl: '',
+                  isActive: true,
+                  displayOrder: localPosters.length + 1,
+                  createdAt: new Date().toISOString()
+                });
+                setIsAddPosterOpen(true);
+              }}
+              className="mb-1 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-purple-600/30"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add New Poster</span>
             </button>
           )}
         </div>
@@ -798,6 +896,216 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
             </div>
+          </div>
+        )}
+
+        {/* TAB 4: PROMOTIONAL POSTERS */}
+        {activeTab === 'posters' && (
+          <div className="p-4 sm:p-6 space-y-6 overflow-y-auto flex-1">
+            
+            {/* Header & Safe ON/OFF Toggle */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/50 via-slate-900 to-slate-900 border border-purple-500/30 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-purple-400" />
+                  <h3 className="text-sm sm:text-base font-extrabold text-white">
+                    Show Promotional Posters Section on Website
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-300">
+                  SAFE ON/OFF Control. Turn OFF to completely hide the promotional poster slider from the customer website without leaving any empty space.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newStatus = localSiteSettings.showPromotionalPosters === false ? true : false;
+                    const updated = { ...localSiteSettings, showPromotionalPosters: newStatus };
+                    setLocalSiteSettings(updated);
+                    if (onUpdateSiteSettings) {
+                      onUpdateSiteSettings(updated);
+                      setSiteSettingsSuccessMsg(
+                        newStatus
+                          ? 'Promotional Posters turned ON (Visible on website)'
+                          : 'Promotional Posters turned OFF (Hidden from website)'
+                      );
+                      setTimeout(() => setSiteSettingsSuccessMsg(''), 3000);
+                    }
+                  }}
+                  className={`relative inline-flex h-8 w-16 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    localSiteSettings.showPromotionalPosters !== false ? 'bg-purple-600' : 'bg-slate-700'
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      localSiteSettings.showPromotionalPosters !== false ? 'translate-x-8' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+                <span className={`text-xs font-black uppercase tracking-wider ${
+                  localSiteSettings.showPromotionalPosters !== false ? 'text-purple-400' : 'text-slate-500'
+                }`}>
+                  {localSiteSettings.showPromotionalPosters !== false ? 'ON' : 'OFF'}
+                </span>
+              </div>
+            </div>
+
+            {siteSettingsSuccessMsg && (
+              <div className="p-3 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs font-bold flex items-center gap-2">
+                <Check className="w-4 h-4 text-purple-400 shrink-0" />
+                <span>{siteSettingsSuccessMsg}</span>
+              </div>
+            )}
+
+            {/* List & Add Header */}
+            <div className="flex items-center justify-between pt-2">
+              <div>
+                <h4 className="text-sm font-extrabold text-white">Promotional Slides ({localPosters.length})</h4>
+                <p className="text-xs text-slate-400">Manage, edit, reorder or disable individual slide banners.</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingPoster({
+                    id: `poster_${Date.now()}`,
+                    title: '',
+                    subtitle: '',
+                    buttonText: 'Claim Offer',
+                    productId: products[0]?.id || '',
+                    imageUrl: '',
+                    isActive: true,
+                    displayOrder: localPosters.length + 1,
+                    createdAt: new Date().toISOString()
+                  });
+                  setIsAddPosterOpen(true);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-lg shadow-purple-600/30 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add New Poster</span>
+              </button>
+            </div>
+
+            {/* Posters List */}
+            {localPosters.length === 0 ? (
+              <div className="p-8 text-center rounded-2xl bg-slate-900/60 border border-white/5 space-y-2">
+                <Sparkles className="w-8 h-8 text-purple-400 mx-auto opacity-50" />
+                <p className="text-xs font-bold text-slate-300">No promotional posters found.</p>
+                <p className="text-[11px] text-slate-500">Click "Add New Poster" to create your first promotional banner slide!</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {localPosters.map((poster, index) => {
+                  const linkedProd = products.find(p => p.id === poster.productId);
+                  return (
+                    <div
+                      key={poster.id}
+                      className="p-4 rounded-2xl bg-slate-900/90 border border-white/10 hover:border-purple-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all"
+                    >
+                      <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                        {/* Order Controls */}
+                        <div className="flex flex-col gap-1 shrink-0">
+                          <button
+                            type="button"
+                            disabled={index === 0}
+                            onClick={() => handleMovePoster(index, 'up')}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-purple-600 disabled:opacity-30 disabled:hover:bg-slate-800 text-slate-300 hover:text-white transition-all cursor-pointer"
+                            title="Move Up"
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={index === localPosters.length - 1}
+                            onClick={() => handleMovePoster(index, 'down')}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-purple-600 disabled:opacity-30 disabled:hover:bg-slate-800 text-slate-300 hover:text-white transition-all cursor-pointer"
+                            title="Move Down"
+                          >
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Thumbnail */}
+                        <div className="w-16 h-12 rounded-xl bg-slate-950 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center">
+                          {poster.imageUrl ? (
+                            <img src={poster.imageUrl} alt={poster.title} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-tr from-purple-900/50 to-cyan-900/50 flex items-center justify-center text-purple-300">
+                              <Sparkles className="w-5 h-5" />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Text Information */}
+                        <div className="space-y-0.5 min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <h5 className="text-xs font-black text-white truncate">{poster.title || 'Untitled Poster'}</h5>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                                poster.isActive ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500'
+                              }`}
+                            >
+                              {poster.isActive ? 'Active' : 'Disabled'}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-400 truncate">{poster.subtitle || 'No subtitle provided'}</p>
+                          <div className="flex items-center gap-2 text-[10px] text-purple-300 pt-0.5">
+                            <span>CTA: "{poster.buttonText || 'Claim Offer'}"</span>
+                            {linkedProd && (
+                              <>
+                                <span>•</span>
+                                <span className="text-cyan-400 font-semibold">Opens: {linkedProd.title}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePosterActive(poster.id)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
+                            poster.isActive
+                              ? 'bg-slate-800 text-slate-300 border-white/10 hover:bg-slate-700'
+                              : 'bg-emerald-600/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-600/30'
+                          }`}
+                        >
+                          {poster.isActive ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          <span>{poster.isActive ? 'Disable' : 'Enable'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingPoster(poster);
+                            setIsAddPosterOpen(true);
+                          }}
+                          className="p-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 transition-all cursor-pointer"
+                          title="Edit Poster"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePoster(poster.id)}
+                          className="p-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition-all cursor-pointer"
+                          title="Delete Poster"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
           </div>
         )}
 
@@ -1252,6 +1560,211 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 >
                   <Save className="w-4 h-4" />
                   <span>Save Changes</span>
+                </button>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* PROMOTIONAL POSTER ADD / EDIT MODAL */}
+      {isAddPosterOpen && editingPoster && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-2xl bg-[#0f1522] border border-purple-500/30 text-white shadow-2xl p-6 space-y-4 my-auto">
+            
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-purple-500/20 text-purple-400">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-white">
+                    {localPosters.some(p => p.id === editingPoster.id) ? 'Edit Promotional Poster' : 'Add New Promotional Poster'}
+                  </h3>
+                  <p className="text-xs text-slate-400">Customize offer title, banner image, linked product and action button</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddPosterOpen(false);
+                  setEditingPoster(null);
+                }}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!editingPoster.title.trim()) {
+                  alert('Please enter a poster title');
+                  return;
+                }
+
+                const exists = localPosters.some(p => p.id === editingPoster.id);
+                let updated: PromoPoster[];
+                if (exists) {
+                  updated = localPosters.map(p => p.id === editingPoster.id ? editingPoster : p);
+                } else {
+                  updated = [editingPoster, ...localPosters];
+                }
+
+                handleSavePosters(updated);
+                setIsAddPosterOpen(false);
+                setEditingPoster(null);
+              }}
+              className="space-y-4 text-xs"
+            >
+              {/* Poster Title */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-300 block">Poster Title / Headline *</label>
+                <input
+                  type="text"
+                  required
+                  value={editingPoster.title}
+                  onChange={(e) => setEditingPoster({ ...editingPoster, title: e.target.value })}
+                  placeholder="e.g. Gemini AI Pro — Special Offer"
+                  className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white focus:border-purple-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Subtitle */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-300 block">Short Subtitle / Description</label>
+                <input
+                  type="text"
+                  value={editingPoster.subtitle}
+                  onChange={(e) => setEditingPoster({ ...editingPoster, subtitle: e.target.value })}
+                  placeholder="e.g. Multimodal AI & 2TB Cloud Storage • Best Price in Nepal"
+                  className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white focus:border-purple-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Button Text & Product Link */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-300 block">Button CTA Text</label>
+                  <input
+                    type="text"
+                    value={editingPoster.buttonText}
+                    onChange={(e) => setEditingPoster({ ...editingPoster, buttonText: e.target.value })}
+                    placeholder="e.g. Claim Offer / Buy Now"
+                    className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white focus:border-purple-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-300 block">Opens Product</label>
+                  <select
+                    value={editingPoster.productId || ''}
+                    onChange={(e) => setEditingPoster({ ...editingPoster, productId: e.target.value })}
+                    className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white focus:border-purple-500 focus:outline-none"
+                  >
+                    <option value="">General Store / Default Checkout</option>
+                    {products.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.title} ({p.brand})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Poster Image Upload */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-300 block">Poster Background Image (Optional)</label>
+                <input
+                  type="file"
+                  ref={posterFileInputRef}
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handlePosterImageUpload(file);
+                  }}
+                />
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => posterFileInputRef.current?.click()}
+                    className="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-bold flex items-center gap-2 cursor-pointer"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload Image from Device</span>
+                  </button>
+
+                  {editingPoster.imageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingPoster({ ...editingPoster, imageUrl: '' })}
+                      className="text-xs text-rose-400 hover:underline"
+                    >
+                      Remove Custom Image
+                    </button>
+                  )}
+                </div>
+
+                <p className="text-[11px] text-slate-400 pt-1">
+                  If no image is uploaded, SubX Nepal theme dark gradient with brand icons will be used automatically.
+                </p>
+
+                {editingPoster.imageUrl && (
+                  <div className="mt-2 h-20 w-full rounded-xl overflow-hidden bg-slate-950 border border-white/10 relative">
+                    <img src={editingPoster.imageUrl} alt="Poster preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+
+              {/* Status and Order */}
+              <div className="flex items-center justify-between pt-2">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={editingPoster.isActive}
+                    onChange={(e) => setEditingPoster({ ...editingPoster, isActive: e.target.checked })}
+                    className="rounded bg-slate-950 border-white/20 text-purple-500 focus:ring-purple-500"
+                  />
+                  <span>Enable Poster Immediately (Active)</span>
+                </label>
+
+                <div className="flex items-center gap-2 text-xs text-slate-300">
+                  <span>Display Order:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={editingPoster.displayOrder || 1}
+                    onChange={(e) => setEditingPoster({ ...editingPoster, displayOrder: parseInt(e.target.value) || 1 })}
+                    className="w-16 bg-slate-950 border border-white/15 rounded-lg px-2 py-1 text-center font-bold text-purple-400"
+                  />
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="pt-3 border-t border-white/10 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddPosterOpen(false);
+                    setEditingPoster(null);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold hover:bg-slate-700 text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-extrabold text-xs shadow-lg shadow-purple-600/30 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Poster</span>
                 </button>
               </div>
 
